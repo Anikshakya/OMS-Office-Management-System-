@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
+import 'package:get_storage/get_storage.dart';
+import 'services/cache_service.dart';
 import 'state/app_state.dart';
 import 'theme/app_theme.dart';
-import 'widgets/navigation/responsive_navigation.dart';
-import 'widgets/common/custom_toast.dart';
+import 'screens/login_page.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/apply_leave_screen.dart';
 import 'screens/employee_profile_screen.dart';
@@ -11,8 +12,12 @@ import 'screens/appraisal_screen.dart';
 import 'screens/leave_history_screen.dart';
 import 'screens/employee_list_screen.dart';
 import 'screens/employees_on_leave_today_screen.dart';
+import 'widgets/common/custom_toast.dart';
+import 'widgets/navigation/responsive_navigation.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await GetStorage.init();
   runApp(const OmsApp());
 }
 
@@ -23,61 +28,70 @@ class OmsApp extends StatefulWidget {
   State<OmsApp> createState() => _OmsAppState();
 }
 
-class _OmsAppState extends State<OmsApp> {
-  final AppState _appState = AppState();
+final AppState appState = AppState();
+
+Widget buildCurrentPage(int index) {
+  final pageBuilders = <Widget Function()>[
+    () => DashboardScreen(state: appState),
+    () => ApplyLeaveScreen(state: appState),
+    () => EmployeeProfileScreen(state: appState),
+    () => AppraisalScreen(state: appState),
+    () => LeaveHistoryScreen(state: appState),
+    () => EmployeeListScreen(state: appState),
+    () => EmployeesOnLeaveTodayScreen(state: appState),
+  ];
+
+  return index >= 0 && index < pageBuilders.length
+      ? pageBuilders[index]()
+      : pageBuilders.first();
+}
+
+class AuthenticatedHome extends StatelessWidget {
+  const AuthenticatedHome({super.key});
 
   @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: appState,
+      builder: (context, child) => Stack(
+        children: [
+          ResponsiveNavigationShell(
+            state: appState,
+            body: buildCurrentPage(appState.selectedPageIndex),
+          ),
+          ToastOverlayRenderer(
+            toasts: appState.toasts,
+            onDismiss: appState.dismissToast,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OmsAppState extends State<OmsApp> {
+  @override
   void dispose() {
-    _appState.dispose();
+    appState.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _appState,
+      animation: appState,
       builder: (context, child) {
         return GetMaterialApp(
           title: 'Nexus Office Management System',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
-          themeMode: _appState.themeMode,
-          home: Stack(
-            children: [
-              ResponsiveNavigationShell(
-                state: _appState,
-                body: _buildCurrentPage(_appState.selectedPageIndex),
-              ),
-              ToastOverlayRenderer(
-                toasts: _appState.toasts,
-                onDismiss: _appState.dismissToast,
-              ),
-            ],
-          ),
+          themeMode: appState.themeMode,
+            home: read(StorageKeys.apiToken) != ""
+              ? const AuthenticatedHome()
+              : const LoginPage(),
         );
       },
     );
-  }
-
-  Widget _buildCurrentPage(int index) {
-    switch (index) {
-      case 0:
-        return DashboardScreen(state: _appState);
-      case 1:
-        return ApplyLeaveScreen(state: _appState);
-      case 2:
-        return EmployeeProfileScreen(state: _appState);
-      case 3:
-        return AppraisalScreen(state: _appState);
-      case 4:
-        return LeaveHistoryScreen(state: _appState);
-      case 5:
-        return EmployeeListScreen(state: _appState);
-      case 6:
-        return EmployeesOnLeaveTodayScreen(state: _appState);
-      default:
-        return DashboardScreen(state: _appState);
-    }
   }
 }

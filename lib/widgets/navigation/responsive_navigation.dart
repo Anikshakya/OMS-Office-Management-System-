@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_colors.dart';
@@ -81,6 +80,7 @@ class ResponsiveNavigationShell extends StatelessWidget {
     final isDesktop = screenWidth >= 950;
 
     return Scaffold(
+      bottomNavigationBar: isDesktop ? null : _buildBottomNavigationBar(),
       body: SafeArea(
         bottom: Platform.isIOS ? false : true,
         child: Stack(
@@ -100,14 +100,6 @@ class ResponsiveNavigationShell extends StatelessWidget {
               ],
             ),
 
-            // Floating Bottom Nav Bar for Mobile & Tablet
-            if (!isDesktop)
-              Positioned(
-                left: 20,
-                right: 20,
-                bottom: 16,
-                child: _buildFloatingBottomNav(context),
-              ),
           ],
         ),
       ),
@@ -247,75 +239,34 @@ class ResponsiveNavigationShell extends StatelessWidget {
     );
   }
 
-  Widget _buildFloatingBottomNav(BuildContext context) {
+  Widget _buildBottomNavigationBar() {
     final isDark = state.isDarkMode;
-    // Bottom nav tabs: Dashboard (0), Leaves (4), Directory (5), Profile (2)
-    final items = [
-      kNavigationItems[0], // Dashboard
-      kNavigationItems[4], // Leaves History
-      kNavigationItems[5], // Employees
-      kNavigationItems[2], // Profile
-    ];
+    const bottomNavPageIndices = [0, 4, 5, 2];
+    final selectedIndex = bottomNavPageIndices.indexOf(
+      state.selectedPageIndex,
+    );
+    final items = bottomNavPageIndices
+        .map((index) => kNavigationItems[index])
+        .toList();
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          height: 60,
-          decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.surfaceDark.withValues(alpha: 0.88)
-                : Colors.white.withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
-                blurRadius: 20,
-                spreadRadius: 2,
-                offset: const Offset(0, 6),
-              ),
-            ],
-            border: Border.all(
-              color: isDark ? AppColors.borderDark : AppColors.borderLight,
-              width: 1,
+    return BottomNavigationBar(
+      currentIndex: selectedIndex < 0 ? 0 : selectedIndex,
+      onTap: (index) => state.setPageIndex(bottomNavPageIndices[index]),
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: isDark
+          ? AppColors.textMutedDark
+          : AppColors.textMutedLight,
+      items: items
+          .map(
+            (item) => BottomNavigationBarItem(
+              icon: Icon(item.icon),
+              activeIcon: Icon(item.activeIcon),
+              label: item.title,
             ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: items.map((item) {
-              final isSelected = state.selectedPageIndex == item.index;
-
-              return GestureDetector(
-                onTap: () => state.setPageIndex(item.index),
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary.withValues(alpha: 0.12)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Icon(
-                    isSelected ? item.activeIcon : item.icon,
-                    size: 22,
-                    color: isSelected
-                        ? AppColors.primary
-                        : (isDark
-                              ? AppColors.textMutedDark
-                              : AppColors.textMutedLight),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ),
+          )
+          .toList(),
     );
   }
 

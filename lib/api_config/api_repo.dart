@@ -24,8 +24,7 @@ class ApiRepo {
     if (apiPath.startsWith('http://') || apiPath.startsWith('https://')) {
       return apiPath;
     }
-    final path = apiPath.startsWith('/') ? apiPath : '/$apiPath';
-    return "${AppConstants.getBaseUrl()}$path";
+    return "${AppConstants.getBaseUrl()}$apiPath";
   }
 
   // ===========================================================================
@@ -154,7 +153,8 @@ class ApiRepo {
   }) async {
     if (cancelPrevious) {
       cancelAllRequests(
-          reason: 'Cancelled by new GET request (cancelPrevious=true)');
+        reason: 'Cancelled by new GET request (cancelPrevious=true)',
+      );
     }
 
     final token = _dioClient.registerCancelToken(cancelToken);
@@ -163,8 +163,9 @@ class ApiRepo {
     try {
       final response = await dio.get(
         url,
-        queryParameters:
-            queryParameters is Map<String, dynamic> ? queryParameters : null,
+        queryParameters: queryParameters is Map<String, dynamic>
+            ? queryParameters
+            : null,
         options: options,
         cancelToken: token,
       );
@@ -192,7 +193,8 @@ class ApiRepo {
   }) async {
     if (cancelPrevious) {
       cancelAllRequests(
-          reason: 'Cancelled by new POST request (cancelPrevious=true)');
+        reason: 'Cancelled by new POST request (cancelPrevious=true)',
+      );
     }
 
     final token = _dioClient.registerCancelToken(cancelToken);
@@ -202,8 +204,9 @@ class ApiRepo {
       final response = await dio.post(
         url,
         data: data,
-        queryParameters:
-            queryParameters is Map<String, dynamic> ? queryParameters : null,
+        queryParameters: queryParameters is Map<String, dynamic>
+            ? queryParameters
+            : null,
         options: options,
         cancelToken: token,
       );
@@ -231,7 +234,8 @@ class ApiRepo {
   }) async {
     if (cancelPrevious) {
       cancelAllRequests(
-          reason: 'Cancelled by new PUT request (cancelPrevious=true)');
+        reason: 'Cancelled by new PUT request (cancelPrevious=true)',
+      );
     }
 
     final token = _dioClient.registerCancelToken(cancelToken);
@@ -241,8 +245,9 @@ class ApiRepo {
       final response = await dio.put(
         url,
         data: data,
-        queryParameters:
-            queryParameters is Map<String, dynamic> ? queryParameters : null,
+        queryParameters: queryParameters is Map<String, dynamic>
+            ? queryParameters
+            : null,
         options: options,
         cancelToken: token,
       );
@@ -270,7 +275,8 @@ class ApiRepo {
   }) async {
     if (cancelPrevious) {
       cancelAllRequests(
-          reason: 'Cancelled by new PATCH request (cancelPrevious=true)');
+        reason: 'Cancelled by new PATCH request (cancelPrevious=true)',
+      );
     }
 
     final token = _dioClient.registerCancelToken(cancelToken);
@@ -280,8 +286,9 @@ class ApiRepo {
       final response = await dio.patch(
         url,
         data: data,
-        queryParameters:
-            queryParameters is Map<String, dynamic> ? queryParameters : null,
+        queryParameters: queryParameters is Map<String, dynamic>
+            ? queryParameters
+            : null,
         options: options,
         cancelToken: token,
       );
@@ -309,7 +316,8 @@ class ApiRepo {
   }) async {
     if (cancelPrevious) {
       cancelAllRequests(
-          reason: 'Cancelled by new DELETE request (cancelPrevious=true)');
+        reason: 'Cancelled by new DELETE request (cancelPrevious=true)',
+      );
     }
 
     final token = _dioClient.registerCancelToken(cancelToken);
@@ -319,8 +327,9 @@ class ApiRepo {
       final response = await dio.delete(
         url,
         data: data,
-        queryParameters:
-            queryParameters is Map<String, dynamic> ? queryParameters : null,
+        queryParameters: queryParameters is Map<String, dynamic>
+            ? queryParameters
+            : null,
         options: options,
         cancelToken: token,
       );

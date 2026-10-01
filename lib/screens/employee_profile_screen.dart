@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:oms/controllers/auth_controller.dart';
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
@@ -13,11 +15,7 @@ class EmployeeProfileScreen extends StatefulWidget {
   final AppState state;
   final Employee? employee;
 
-  const EmployeeProfileScreen({
-    super.key,
-    required this.state,
-    this.employee,
-  });
+  const EmployeeProfileScreen({super.key, required this.state, this.employee});
 
   @override
   State<EmployeeProfileScreen> createState() => _EmployeeProfileScreenState();
@@ -71,6 +69,26 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                 ],
                 selectedIndex: _activeTab,
                 onTabChanged: (index) => setState(() => _activeTab = index),
+              ),
+
+              const SizedBox(height: 16),
+
+              ElevatedButton.icon(
+                onPressed: () {
+                  final authCon = Get.put(AuthController());
+                  authCon.logout();
+                },
+                icon: const Icon(Icons.logout),
+                label: const Text("Logout"),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
 
               const SizedBox(height: 16),
@@ -142,7 +160,9 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                             color: AppColors.success,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isDark ? AppColors.surfaceDark : Colors.white,
+                              color: isDark
+                                  ? AppColors.surfaceDark
+                                  : Colors.white,
                               width: 2,
                             ),
                           ),
@@ -160,8 +180,9 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                             Flexible(
                               child: Text(
                                 emp.name,
-                                style: AppTypography.displayMedium(isDark)
-                                    .copyWith(fontWeight: FontWeight.bold),
+                                style: AppTypography.displayMedium(
+                                  isDark,
+                                ).copyWith(fontWeight: FontWeight.bold),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -172,7 +193,9 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.success.withValues(alpha: 0.15),
+                                color: AppColors.success.withValues(
+                                  alpha: 0.15,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -226,9 +249,9 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                         const SizedBox(width: 6),
                         Text(
                           emp.employmentType,
-                          style: AppTypography.caption(isDark).copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AppTypography.caption(
+                            isDark,
+                          ).copyWith(fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -280,9 +303,9 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                 children: [
                   Text(
                     'App Appearance Theme',
-                    style: AppTypography.titleMedium(isDark).copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppTypography.titleMedium(
+                      isDark,
+                    ).copyWith(fontWeight: FontWeight.bold),
                   ),
                   Text(
                     isDark ? 'Dark Mode Active' : 'Light Mode Active',
@@ -302,7 +325,11 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     );
   }
 
-  Widget _buildPersonalInfoTab(BuildContext context, bool isDark, Employee emp) {
+  Widget _buildPersonalInfoTab(
+    BuildContext context,
+    bool isDark,
+    Employee emp,
+  ) {
     return GlassContainer(
       borderRadius: 16,
       padding: const EdgeInsets.all(16),
@@ -314,8 +341,16 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
             _DetailItem('Email Address', emp.email, Icons.email_outlined),
             _DetailItem('Phone Number', emp.phone, Icons.phone_outlined),
             _DetailItem('Date of Birth', emp.dob, Icons.cake_outlined),
-            _DetailItem('Current Location', emp.location, Icons.location_on_outlined),
-            _DetailItem('Residential Address', emp.address, Icons.home_outlined),
+            _DetailItem(
+              'Current Location',
+              emp.location,
+              Icons.location_on_outlined,
+            ),
+            _DetailItem(
+              'Residential Address',
+              emp.address,
+              Icons.home_outlined,
+            ),
           ], isDark),
         ],
       ),
@@ -330,12 +365,36 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildDetailGrid([
-            _DetailItem('Employee Code', emp.employeeCode, Icons.badge_outlined),
-            _DetailItem('Department', emp.department, Icons.corporate_fare_outlined),
-            _DetailItem('Designation', emp.designation, Icons.work_outline_rounded),
-            _DetailItem('Employment Type', emp.employmentType, Icons.card_membership_rounded),
-            _DetailItem('Joining Date', emp.joinDate, Icons.event_available_outlined),
-            _DetailItem('Reporting Manager', emp.managerName, Icons.supervisor_account_outlined),
+            _DetailItem(
+              'Employee Code',
+              emp.employeeCode,
+              Icons.badge_outlined,
+            ),
+            _DetailItem(
+              'Department',
+              emp.department,
+              Icons.corporate_fare_outlined,
+            ),
+            _DetailItem(
+              'Designation',
+              emp.designation,
+              Icons.work_outline_rounded,
+            ),
+            _DetailItem(
+              'Employment Type',
+              emp.employmentType,
+              Icons.card_membership_rounded,
+            ),
+            _DetailItem(
+              'Joining Date',
+              emp.joinDate,
+              Icons.event_available_outlined,
+            ),
+            _DetailItem(
+              'Reporting Manager',
+              emp.managerName,
+              Icons.supervisor_account_outlined,
+            ),
           ], isDark),
         ],
       ),
@@ -384,9 +443,9 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                     children: [
                       Text(
                         doc.title,
-                        style: AppTypography.titleMedium(isDark).copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: AppTypography.titleMedium(
+                          isDark,
+                        ).copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -465,9 +524,9 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                     children: [
                       Text(
                         q.degree,
-                        style: AppTypography.titleMedium(isDark).copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: AppTypography.titleMedium(
+                          isDark,
+                        ).copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -485,11 +544,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     );
   }
 
-  Widget _buildExperienceTab(
-    BuildContext context,
-    bool isDark,
-    Employee emp,
-  ) {
+  Widget _buildExperienceTab(BuildContext context, bool isDark, Employee emp) {
     if (emp.experiences.isEmpty) {
       return GlassContainer(
         borderRadius: 16,
@@ -532,9 +587,9 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                     children: [
                       Text(
                         exp.role,
-                        style: AppTypography.titleMedium(isDark).copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: AppTypography.titleMedium(
+                          isDark,
+                        ).copyWith(fontWeight: FontWeight.w700),
                       ),
                       Text(
                         '${exp.company} • ${exp.period}',
@@ -599,9 +654,9 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                           const SizedBox(height: 2),
                           Text(
                             item.value,
-                            style: AppTypography.bodyMedium(isDark).copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: AppTypography.bodyMedium(
+                              isDark,
+                            ).copyWith(fontWeight: FontWeight.w700),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
