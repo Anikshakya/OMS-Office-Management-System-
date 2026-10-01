@@ -99,7 +99,6 @@ class ResponsiveNavigationShell extends StatelessWidget {
                 ),
               ],
             ),
-
           ],
         ),
       ),
@@ -242,31 +241,54 @@ class ResponsiveNavigationShell extends StatelessWidget {
   Widget _buildBottomNavigationBar() {
     final isDark = state.isDarkMode;
     const bottomNavPageIndices = [0, 4, 5, 2];
-    final selectedIndex = bottomNavPageIndices.indexOf(
-      state.selectedPageIndex,
-    );
+    final selectedIndex = bottomNavPageIndices.indexOf(state.selectedPageIndex);
     final items = bottomNavPageIndices
         .map((index) => kNavigationItems[index])
         .toList();
 
-    return BottomNavigationBar(
-      currentIndex: selectedIndex < 0 ? 0 : selectedIndex,
-      onTap: (index) => state.setPageIndex(bottomNavPageIndices[index]),
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-      selectedItemColor: AppColors.primary,
-      unselectedItemColor: isDark
-          ? AppColors.textMutedDark
-          : AppColors.textMutedLight,
-      items: items
-          .map(
-            (item) => BottomNavigationBarItem(
-              icon: Icon(item.icon),
-              activeIcon: Icon(item.activeIcon),
-              label: item.title,
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.4 : 0.12),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: BottomNavigationBar(
+              currentIndex: selectedIndex < 0 ? 0 : selectedIndex,
+              onTap: (index) => state.setPageIndex(bottomNavPageIndices[index]),
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              selectedItemColor: AppColors.primary,
+              unselectedItemColor: isDark
+                  ? AppColors.textMutedDark
+                  : AppColors.textMutedLight,
+              items: items
+                  .map(
+                    (item) => BottomNavigationBarItem(
+                      icon: Icon(item.icon),
+                      activeIcon: Icon(item.activeIcon),
+                      label: item.title,
+                    ),
+                  )
+                  .toList(),
             ),
-          )
-          .toList(),
+          ),
+        ),
+      ),
     );
   }
 
