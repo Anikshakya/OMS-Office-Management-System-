@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'state/app_state.dart';
 import 'theme/app_theme.dart';
 import 'widgets/navigation/responsive_navigation.dart';
@@ -36,7 +37,7 @@ class _OmsAppState extends State<OmsApp> {
     return AnimatedBuilder(
       animation: _appState,
       builder: (context, child) {
-        return MaterialApp(
+        return GetMaterialApp(
           title: 'Nexus Office Management System',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
