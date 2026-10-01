@@ -4,6 +4,6 @@ class AppConstants {
 
   /// Returns the sanitized Base URL without trailing slash
   static String getBaseUrl() {
-    return "https://jsonplaceholder.typicode.com";
+    return "http://110.44.126.55:8404/api/";
   }
 }
