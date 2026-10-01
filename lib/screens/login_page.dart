@@ -140,26 +140,22 @@ class _LoginPageState extends State<LoginPage> {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: kIsWeb ? 400 : 20),
       child: Obx(() {
-        AuthController authController = AuthController();
+        AuthController authController = Get.put(AuthController());
         // Use Obx to make it reactive
         return SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             onPressed: authController.isLoginLoading.isTrue
-                ? () {}
-                : () => authController.login(
-                    email: _emailController.text,
-                    password: _passwordController.text,
-                  ),
-            child: Text("Login"),
-            // color: darkBlue,
-            // text: "Login",
-            // onPressed: isLoginLoading.isTrue
-            //   ? null
-            //   : () => _login(),
-            // height: kIsWeb ? 56.h : 50.h,
-            // width: double.infinity,
-            // isLoading: isLoginLoading.isTrue,
+                ? null
+                : () {
+                    if (_formKey.currentState!.validate()) {
+                      authController.login(
+                        email: _emailController.text,
+                        password: _passwordController.text,
+                      );
+                    }
+                  },
+            child: const Text("Login"),
           ),
         );
       }),
