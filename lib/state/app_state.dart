@@ -3,6 +3,10 @@ import '../models/employee.dart';
 import '../models/leave_request.dart';
 import '../models/leave_quota.dart';
 import '../models/appraisal.dart';
+import 'package:get/get.dart';
+import '../controllers/user_controller.dart';
+
+import '../controllers/app_controller.dart';
 
 class ToastNotification {
   final String id;
@@ -21,55 +25,27 @@ class ToastNotification {
 enum ToastType { success, error, warning, info }
 
 class AppState extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.dark;
-  ThemeMode get themeMode => _themeMode;
-  bool get isDarkMode => _themeMode == ThemeMode.dark;
+  ThemeMode get themeMode => Get.find<AppController>().themeMode.value;
+  bool get isDarkMode => Get.find<AppController>().isDarkMode;
 
-  int _selectedPageIndex = 0;
-  int get selectedPageIndex => _selectedPageIndex;
+  int get selectedPageIndex => Get.find<AppController>().selectedPageIndex.value;
 
-  void toggleTheme() {
-    _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
-    notifyListeners();
-  }
-
-  void setThemeMode(ThemeMode mode) {
-    _themeMode = mode;
-    notifyListeners();
-  }
-
-  void setPageIndex(int index) {
-    _selectedPageIndex = index;
-    notifyListeners();
-  }
+  void toggleTheme() => Get.find<AppController>().toggleTheme();
+  void setThemeMode(ThemeMode mode) => Get.find<AppController>().setThemeMode(mode);
+  void setPageIndex(int index) => Get.find<AppController>().setPageIndex(index);
 
   // Toast System
-  final List<ToastNotification> _toasts = [];
-  List<ToastNotification> get toasts => List.unmodifiable(_toasts);
+  List<ToastNotification> get toasts => Get.find<AppController>().toasts;
 
-  void showToast(String title, String message, ToastType type) {
-    final toast = ToastNotification(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      message: message,
-      type: type,
-    );
-    _toasts.add(toast);
-    notifyListeners();
+  void showToast(String title, String message, ToastType type) =>
+      Get.find<AppController>().showToast(title, message, type);
 
-    Future.delayed(const Duration(seconds: 4), () {
-      _toasts.removeWhere((t) => t.id == toast.id);
-      notifyListeners();
-    });
-  }
-
-  void dismissToast(String id) {
-    _toasts.removeWhere((t) => t.id == id);
-    notifyListeners();
-  }
+  void dismissToast(String id) => Get.find<AppController>().dismissToast(id);
 
   // Current User & Data
-  late Employee currentUser;
+  Employee get currentUser => Get.find<UserController>().currentUser.value!;
+  set currentUser(Employee val) => Get.find<UserController>().setCurrentUser(val);
+
   late List<Employee> employees;
   late List<LeaveQuota> leaveQuotas;
   late List<LeaveRequest> leaveRequests;
@@ -127,6 +103,20 @@ class AppState extends ChangeNotifier {
     }
 
     showToast('Profile Updated', 'All personal and employment details updated.', ToastType.success);
+    notifyListeners();
+  }
+
+  void setCurrentUserFromApi(Map<String, dynamic> userData) {
+    Get.find<UserController>().setCurrentUserFromApi(userData);
+
+    // Also update in the mock employees list if exists
+    final idx = employees.indexWhere((e) => e.id == currentUser.id);
+    if (idx != -1) {
+      employees[idx] = currentUser;
+    } else {
+      employees.insert(0, currentUser);
+    }
+
     notifyListeners();
   }
 

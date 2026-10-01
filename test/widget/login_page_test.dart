@@ -7,15 +7,15 @@ void main() {
   testWidgets('LoginPage rendering and validation test', (WidgetTester tester) async {
     await tester.pumpWidget(const GetMaterialApp(home: LoginPage()));
 
-    expect(find.text('Welcome!'), findsOneWidget);
-    expect(find.text('Sign in to continue'), findsOneWidget);
+    expect(find.text('Welcome Back!'), findsOneWidget);
+    expect(find.text('Sign in to continue to Nexus OMS'), findsOneWidget);
     
     // Find text fields
     final textFields = find.byType(TextFormField);
     expect(textFields, findsNWidgets(2)); // Email and Password
 
     // Find Login button
-    final loginButton = find.byType(ElevatedButton);
+    final loginButton = find.text('Sign In');
     expect(loginButton, findsOneWidget);
 
     // Tap login without entering data

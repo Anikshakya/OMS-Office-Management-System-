@@ -3,13 +3,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:oms/state/app_state.dart';
 import 'package:oms/models/leave_request.dart';
 import 'package:oms/models/appraisal.dart';
+import 'package:get/get.dart';
+import 'package:oms/controllers/user_controller.dart';
+import 'package:oms/controllers/app_controller.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   group('AppState Tests', () {
     late AppState appState;
 
     setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      const MethodChannel('plugins.flutter.io/path_provider')
+          .setMockMethodCallHandler((MethodCall methodCall) async {
+        return '.';
+      });
+      Get.put(UserController());
+      Get.put(AppController());
       appState = AppState();
+    });
+
+    tearDown(() {
+      Get.reset();
     });
 
     test('Theme toggles correctly', () {

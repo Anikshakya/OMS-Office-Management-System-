@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:get_storage/get_storage.dart';
 import 'services/cache_service.dart';
 import 'state/app_state.dart';
@@ -15,9 +14,18 @@ import 'screens/employees_on_leave_today_screen.dart';
 import 'widgets/common/custom_toast.dart';
 import 'widgets/navigation/responsive_navigation.dart';
 
+import 'package:get/get.dart';
+import 'controllers/user_controller.dart';
+import 'controllers/app_controller.dart';
+import 'controllers/leave_controller.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
+  Get.put(UserController());
+  Get.put(AppController());
+  Get.put(LeaveController());
+  appState = AppState();
   runApp(const OmsApp());
 }
 
@@ -28,7 +36,7 @@ class OmsApp extends StatefulWidget {
   State<OmsApp> createState() => _OmsAppState();
 }
 
-final AppState appState = AppState();
+late final AppState appState;
 
 Widget buildCurrentPage(int index) {
   final pageBuilders = <Widget Function()>[
@@ -51,21 +59,19 @@ class AuthenticatedHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: appState,
-      builder: (context, child) => Stack(
-        children: [
-          ResponsiveNavigationShell(
-            state: appState,
-            body: buildCurrentPage(appState.selectedPageIndex),
-          ),
-          ToastOverlayRenderer(
-            toasts: appState.toasts,
-            onDismiss: appState.dismissToast,
-          ),
-        ],
-      ),
-    );
+    final appController = Get.find<AppController>();
+    return Obx(() => Stack(
+      children: [
+        ResponsiveNavigationShell(
+          state: appState,
+          body: buildCurrentPage(appController.selectedPageIndex.value),
+        ),
+        ToastOverlayRenderer(
+          toasts: appController.toasts,
+          onDismiss: appController.dismissToast,
+        ),
+      ],
+    ));
   }
 }
 
@@ -78,20 +84,16 @@ class _OmsAppState extends State<OmsApp> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: appState,
-      builder: (context, child) {
-        return GetMaterialApp(
-          title: 'Nexus Office Management System',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: appState.themeMode,
-            home: read(StorageKeys.apiToken) != ""
-              ? const AuthenticatedHome()
-              : const LoginPage(),
-        );
-      },
-    );
+    final appController = Get.find<AppController>();
+    return Obx(() => GetMaterialApp(
+      title: 'Nexus Office Management System',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: appController.themeMode.value,
+      home: read(StorageKeys.apiToken) != ""
+          ? const AuthenticatedHome()
+          : const LoginPage(),
+    ));
   }
 }

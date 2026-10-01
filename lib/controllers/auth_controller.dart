@@ -4,6 +4,7 @@ import 'package:oms/main.dart';
 import 'package:oms/screens/login_page.dart';
 import 'package:oms/services/cache_service.dart';
 import 'package:oms/services/toast_service.dart';
+import 'package:oms/controllers/app_controller.dart';
 
 class AuthController extends GetxController {
   final RxBool isLoginLoading = false.obs;
@@ -19,6 +20,13 @@ class AuthController extends GetxController {
       );
       if (apiReasponse != null && apiReasponse["status"] == "success") {
         write(StorageKeys.apiToken, apiReasponse['data']['token']);
+        
+        // Pass the user data to AppState
+        if (apiReasponse['data']['user'] != null) {
+          appState.setCurrentUserFromApi(apiReasponse['data']['user']);
+        }
+        
+        Get.find<AppController>().setPageIndex(0);
         Get.offAll(() => const AuthenticatedHome());
         // Handle successful login, e.g., navigate to the home screen
       } else {

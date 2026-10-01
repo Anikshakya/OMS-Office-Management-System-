@@ -115,8 +115,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark
-              ? [AppColors.primaryDark.withValues(alpha: 0.4), AppColors.secondary.withValues(alpha: 0.4)]
-              : [AppColors.secondary.withValues(alpha: 0.8), AppColors.secondary.withValues(alpha: 0.8)],
+              ? [
+                  AppColors.primaryDark.withValues(alpha: 0.4),
+                  AppColors.secondary.withValues(alpha: 0.4),
+                ]
+              : [
+                  AppColors.secondary.withValues(alpha: 0.8),
+                  AppColors.secondary.withValues(alpha: 0.8),
+                ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -482,7 +488,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: req.leaveType.color.withValues(alpha: 0.12),
+                                  color: req.leaveType.color.withValues(
+                                    alpha: 0.12,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(

@@ -2,9 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:oms/screens/dashboard_screen.dart';
 import 'package:oms/state/app_state.dart';
+import 'package:get/get.dart';
+import 'package:oms/controllers/user_controller.dart';
+import 'package:oms/controllers/app_controller.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   testWidgets('DashboardScreen rendering and interactions', (WidgetTester tester) async {
+    const MethodChannel('plugins.flutter.io/path_provider')
+        .setMockMethodCallHandler((MethodCall methodCall) async {
+      return '.';
+    });
+    Get.put(UserController());
+    Get.put(AppController());
     final appState = AppState();
 
     await tester.pumpWidget(MaterialApp(

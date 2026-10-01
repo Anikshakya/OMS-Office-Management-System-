@@ -8,6 +8,8 @@ import '../widgets/common/custom_inputs.dart';
 import '../widgets/common/custom_dialogs.dart';
 import '../widgets/common/app_avatar.dart';
 import '../models/leave_request.dart';
+import 'package:get/get.dart';
+import '../controllers/leave_controller.dart';
 
 class LeaveHistoryScreen extends StatefulWidget {
   final AppState state;
@@ -22,6 +24,12 @@ class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
   String _activeFilter = 'All';
   int _selectedYear = DateTime.now().year;
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    Get.find<LeaveController>().fetchLeaveHistory();
+  }
 
   @override
   void dispose() {
@@ -253,7 +261,7 @@ class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
                               confirmLabel: 'Cancel Request',
                               isDestructive: true,
                               onConfirm: () =>
-                                  widget.state.cancelLeaveRequest(req.id),
+                                  Get.find<LeaveController>().cancelLeaveRequest(req.id),
                             ),
                           );
                         },
@@ -296,42 +304,49 @@ class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final leaveController = Get.find<LeaveController>();
     final isDark = widget.state.isDarkMode;
-    final myHistory = widget.state.currentUserLeaveHistory;
 
-    // Dynamically build list of available years from request history
-    final currentYear = DateTime.now().year;
-    final availableYears =
-        myHistory.map((e) => e.startDate.year).toSet().toList()
-          ..sort((a, b) => b.compareTo(a));
+    return Obx(() {
+      if (leaveController.isLoading.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
 
-    if (!availableYears.contains(currentYear)) {
-      availableYears.add(currentYear);
-      availableYears.sort((a, b) => b.compareTo(a));
-    }
+      final myHistory = leaveController.leaveHistory;
 
-    // Pre-calculate search filtered items for year context
-    final query = widget.state.leaveHistorySearchQuery.trim().toLowerCase();
-    final yearFiltered = myHistory.where((req) {
-      final matchesYear = req.startDate.year == _selectedYear;
-      final matchesSearch =
-          query.isEmpty ||
-          req.id.toLowerCase().contains(query) ||
-          req.reason.toLowerCase().contains(query);
-      return matchesYear && matchesSearch;
-    }).toList();
+      // Dynamically build list of available years from request history
+      final currentYear = DateTime.now().year;
+      final availableYears =
+          myHistory.map((e) => e.startDate.year).toSet().toList()
+            ..sort((a, b) => b.compareTo(a));
 
-    // Filter by active status
-    final filtered = yearFiltered.where((req) {
-      return switch (_activeFilter) {
-        'Pending' => req.status == LeaveStatus.pending,
-        'Approved' => req.status == LeaveStatus.approved,
-        'Rejected' => req.status == LeaveStatus.rejected,
-        _ => true,
-      };
-    }).toList();
+      if (!availableYears.contains(currentYear)) {
+        availableYears.add(currentYear);
+        availableYears.sort((a, b) => b.compareTo(a));
+      }
 
-    return SingleChildScrollView(
+      // Pre-calculate search filtered items for year context
+      final query = widget.state.leaveHistorySearchQuery.trim().toLowerCase();
+      final yearFiltered = myHistory.where((req) {
+        final matchesYear = req.startDate.year == _selectedYear;
+        final matchesSearch =
+            query.isEmpty ||
+            req.id.toLowerCase().contains(query) ||
+            req.reason.toLowerCase().contains(query);
+        return matchesYear && matchesSearch;
+      }).toList();
+
+      // Filter by active status
+      final filtered = yearFiltered.where((req) {
+        return switch (_activeFilter) {
+          'Pending' => req.status == LeaveStatus.pending,
+          'Approved' => req.status == LeaveStatus.approved,
+          'Rejected' => req.status == LeaveStatus.rejected,
+          _ => true,
+        };
+      }).toList();
+
+      return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
       child: Center(
         child: ConstrainedBox(
@@ -372,6 +387,7 @@ class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
         ),
       ),
     );
+    });
   }
 
   Widget _buildProfessionalYearSelector(List<int> availableYears, bool isDark) {
