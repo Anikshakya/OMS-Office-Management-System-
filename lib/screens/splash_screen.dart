@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../app_config/app_routes.dart';
 import '../services/cache_service.dart';
 import '../theme/app_colors.dart';
+import 'dashboard.dart';
+import 'login_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -23,7 +24,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     final hasToken = read(StorageKeys.apiToken) != '';
-    Get.offAllNamed(hasToken ? AppRoutes.dashboard : AppRoutes.login);
+    Get.offAll(() => hasToken ? const Dashboard() : const LoginPage());
   }
 
   @override

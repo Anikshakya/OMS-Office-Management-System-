@@ -1,10 +1,11 @@
 import 'package:get/get.dart';
-import 'package:oms/app_config/app_routes.dart';
 import 'package:oms/api_config/api_repo.dart';
 import 'package:oms/controllers/app_data_controller.dart';
 import 'package:oms/services/cache_service.dart';
 import 'package:oms/services/toast_service.dart';
 import 'package:oms/controllers/app_controller.dart';
+import 'package:oms/screens/dashboard.dart';
+import 'package:oms/screens/login_page.dart';
 
 class AuthController extends GetxController {
   final RxBool isLoginLoading = false.obs;
@@ -28,7 +29,7 @@ class AuthController extends GetxController {
         }
 
         Get.find<AppController>().selectedPageIndex.value = 0;
-        Get.offAllNamed(AppRoutes.dashboard);
+        Get.offAll(() => const Dashboard());
         // Handle successful login, e.g., navigate to the home screen
       } else {
         // Handle login failure, e.g., show error message
@@ -51,7 +52,7 @@ class AuthController extends GetxController {
       );
       if (apiReasponse != null && apiReasponse["status"] == "success") {
         clearAllData();
-        Get.offAllNamed(AppRoutes.login);
+        Get.offAll(() => const LoginPage());
         // Handle successful login, e.g., navigate to the home screen
       } else {
         // Handle login failure, e.g., show error message
