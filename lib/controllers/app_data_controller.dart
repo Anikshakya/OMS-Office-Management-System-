@@ -108,7 +108,7 @@ class AppDataController extends GetxController {
       name: 'Alex Morgan',
       designation: 'Principal Product Architect & UX Strategist',
       department: 'Product & Design',
-      email: 'alex.morgan@nexuscorp.com',
+      email: 'alex.morgan@corp.com',
       phone: '+1 (555) 234-5678',
       avatarUrl:
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
@@ -191,7 +191,7 @@ class AppDataController extends GetxController {
         name: 'Sarah Jenkins',
         designation: 'VP of Product & Design',
         department: 'Product & Design',
-        email: 'sarah.jenkins@nexuscorp.com',
+        email: 'sarah.jenkins@corp.com',
         phone: '+1 (555) 345-6789',
         avatarUrl:
             'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
@@ -213,7 +213,7 @@ class AppDataController extends GetxController {
         name: 'Marcus Vance',
         designation: 'VP of Engineering',
         department: 'Engineering',
-        email: 'marcus.vance@nexuscorp.com',
+        email: 'marcus.vance@corp.com',
         phone: '+1 (555) 456-7890',
         avatarUrl:
             'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
@@ -235,7 +235,7 @@ class AppDataController extends GetxController {
         name: 'Sophia Patel',
         designation: 'People Operations Lead',
         department: 'Human Resources',
-        email: 'sophia.patel@nexuscorp.com',
+        email: 'sophia.patel@corp.com',
         phone: '+1 (555) 567-8901',
         avatarUrl:
             'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300',
@@ -257,7 +257,7 @@ class AppDataController extends GetxController {
         name: 'Jordan Miller',
         designation: 'Senior DevOps Architect',
         department: 'Engineering',
-        email: 'jordan.miller@nexuscorp.com',
+        email: 'jordan.miller@corp.com',
         phone: '+1 (555) 678-9012',
         avatarUrl:
             'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
@@ -279,7 +279,7 @@ class AppDataController extends GetxController {
         name: 'Elena Rostova',
         designation: 'Lead Frontend Engineer',
         department: 'Engineering',
-        email: 'elena.rostova@nexuscorp.com',
+        email: 'elena.rostova@corp.com',
         phone: '+1 (555) 789-0123',
         avatarUrl:
             'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300',
@@ -301,7 +301,7 @@ class AppDataController extends GetxController {
         name: 'David Kim',
         designation: 'Senior Data Scientist',
         department: 'Engineering',
-        email: 'david.kim@nexuscorp.com',
+        email: 'david.kim@corp.com',
         phone: '+1 (555) 890-1234',
         avatarUrl:
             'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=300',
@@ -323,7 +323,7 @@ class AppDataController extends GetxController {
         name: 'Rachel Adams',
         designation: 'Growth Marketing Lead',
         department: 'Marketing',
-        email: 'rachel.adams@nexuscorp.com',
+        email: 'rachel.adams@corp.com',
         phone: '+1 (555) 901-2345',
         avatarUrl:
             'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300',
@@ -345,7 +345,7 @@ class AppDataController extends GetxController {
         name: 'Nathaniel Cole',
         designation: 'Security Systems Lead',
         department: 'Engineering',
-        email: 'nathaniel.cole@nexuscorp.com',
+        email: 'nathaniel.cole@corp.com',
         phone: '+1 (555) 012-3456',
         avatarUrl:
             'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=300',
@@ -367,7 +367,7 @@ class AppDataController extends GetxController {
         name: 'Chloe Bennett',
         designation: 'Senior Brand Specialist',
         department: 'Marketing',
-        email: 'chloe.bennett@nexuscorp.com',
+        email: 'chloe.bennett@corp.com',
         phone: '+1 (555) 123-4567',
         avatarUrl:
             'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=300',
@@ -389,7 +389,7 @@ class AppDataController extends GetxController {
         name: 'Victor Vance',
         designation: 'Talent Acquisition Manager',
         department: 'Human Resources',
-        email: 'victor.vance@nexuscorp.com',
+        email: 'victor.vance@corp.com',
         phone: '+1 (555) 234-8901',
         avatarUrl:
             'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=300',
@@ -411,7 +411,7 @@ class AppDataController extends GetxController {
         name: 'Isabella Cruz',
         designation: 'Staff Product Manager',
         department: 'Product & Design',
-        email: 'isabella.cruz@nexuscorp.com',
+        email: 'isabella.cruz@corp.com',
         phone: '+1 (555) 345-9012',
         avatarUrl:
             'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=300',

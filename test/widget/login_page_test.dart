@@ -8,7 +8,7 @@ void main() {
     await tester.pumpWidget(const GetMaterialApp(home: LoginPage()));
 
     expect(find.text('Welcome Back!'), findsOneWidget);
-    expect(find.text('Sign in to continue to Nexus OMS'), findsOneWidget);
+    expect(find.text('Sign in to continue to  OMS'), findsOneWidget);
     
     // Find text fields
     final textFields = find.byType(TextFormField);

@@ -49,7 +49,7 @@ class _OmsAppState extends State<OmsApp> {
 
     return Obx(
       () => GetMaterialApp(
-        title: 'Nexus Office Management System',
+        title: 'Office Management System',
         debugShowCheckedModeBanner: false,
         navigatorKey: Get.key,
 

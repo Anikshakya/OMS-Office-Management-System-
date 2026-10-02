@@ -163,7 +163,7 @@ class _LoginHeader extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Sign in to continue to Nexus OMS',
+          'Sign in to continue to  OMS',
           textAlign: TextAlign.center,
           style: AppTypography.bodyMedium(isDark),
         ),

@@ -16,7 +16,7 @@ void main() {
 
       // 1. Verify we are on the LoginPage
       expect(find.text('Welcome Back!'), findsOneWidget);
-      expect(find.text('Sign in to continue to Nexus OMS'), findsOneWidget);
+      expect(find.text('Sign in to continue to  OMS'), findsOneWidget);
 
       // 2. Find text fields
       final emailField = find.byType(TextFormField).first;
@@ -24,7 +24,7 @@ void main() {
       final loginButton = find.text('Sign In');
 
       // 3. Enter credentials
-      await tester.enterText(emailField, 'alex.morgan@nexuscorp.com');
+      await tester.enterText(emailField, 'alex.morgan@corp.com');
       await tester.enterText(passwordField, 'password123');
       await tester.pumpAndSettle();
 
