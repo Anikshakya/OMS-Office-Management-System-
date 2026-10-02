@@ -95,10 +95,7 @@ class _DashboardState extends State<Dashboard> {
         // ---------------------------------------------------------------------
         // BODY
         // ---------------------------------------------------------------------
-        body: IndexedStack(
-          index: stackIndex,
-          children: _pages,
-        ),
+        body: _pages[stackIndex],
 
         // ---------------------------------------------------------------------
         // FLOATING IOS GLASS NAVIGATION BAR
