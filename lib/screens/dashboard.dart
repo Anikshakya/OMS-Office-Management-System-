@@ -23,7 +23,7 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   // ---------------------------------------------------------------------------
-  // Navigation
+  // Navigation Tabs Configuration
   // ---------------------------------------------------------------------------
 
   static const _tabs = [
@@ -52,8 +52,6 @@ class _DashboardState extends State<Dashboard> {
       activeIcon: Icons.person_rounded,
     ),
   ];
-
-  static const double _navigationHeight = 68;
 
   static const _homePageIds = [0, 4, 5, 2, 6];
 
@@ -84,6 +82,8 @@ class _DashboardState extends State<Dashboard> {
       final stackIndex = pageIndex < 0 ? 0 : pageIndex;
 
       return Scaffold(
+        extendBody: true, // Allows body content to show behind translucent blurred floating nav
+        
         // ---------------------------------------------------------------------
         // TOP APP BAR
         // ---------------------------------------------------------------------
@@ -95,25 +95,90 @@ class _DashboardState extends State<Dashboard> {
         // ---------------------------------------------------------------------
         // BODY
         // ---------------------------------------------------------------------
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            IndexedStack(index: stackIndex, children: _pages),
-
-            // ---------------------------------------------------------------
-            // FLOATING BOTTOM NAVIGATION
-            // ---------------------------------------------------------------
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _buildFloatingNavigation(context, appController),
-            ),
-
-          ],
+        body: Padding(
+          padding: const EdgeInsets.only(bottom: 20), // Clearance for floating nav bar
+          child: IndexedStack(
+            index: stackIndex,
+            children: _pages,
+          ),
         ),
+
+        // ---------------------------------------------------------------------
+        // FLOATING IOS GLASS NAVIGATION BAR
+        // ---------------------------------------------------------------------
+        bottomNavigationBar: _buildIosFloatingNav(context, appController),
       );
     });
+  }
+
+  // ===========================================================================
+  // FLOATING IOS NAVIGATION BAR
+  // ===========================================================================
+
+  Widget _buildIosFloatingNav(BuildContext context, AppController appController) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 26),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(36),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                child: Container(
+                  height: 66,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: (isDark ? const Color(0xFF1E1E1E) : Colors.white)
+                        .withValues(alpha: isDark ? 0.72 : 0.82),
+                    borderRadius: BorderRadius.circular(36),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : Colors.black.withValues(alpha: 0.08),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.14),
+                        blurRadius: 28,
+                        spreadRadius: -2,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: _tabs.map((tab) {
+                      final isSelected =
+                          appController.selectedPageIndex.value == tab.pageIndex;
+
+                      return Expanded(
+                        child: _FloatingNavItem(
+                          tab: tab,
+                          selected: isSelected,
+                          isDark: isDark,
+                          onTap: () {
+                            if (!isSelected) {
+                              appController.setPageIndex(tab.pageIndex);
+                            }
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // ===========================================================================
@@ -141,7 +206,7 @@ class _DashboardState extends State<Dashboard> {
         child: Row(
           children: [
             // -----------------------------------------------------------------
-            // LEFT ICON / BACK BUTTON
+            // LEFT ICON / LOGO
             // -----------------------------------------------------------------
             Container(
               width: 36,
@@ -189,7 +254,6 @@ class _DashboardState extends State<Dashboard> {
                     );
                   },
                 ),
-
                 Positioned(
                   right: 7,
                   top: 6,
@@ -256,94 +320,13 @@ class _DashboardState extends State<Dashboard> {
       ),
     );
   }
-
-  // ===========================================================================
-  // FLOATING IOS NAVIGATION
-  // ===========================================================================
-
-  Widget _buildFloatingNavigation(
-    BuildContext context,
-    AppController appController,
-  ) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(32),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: Container(
-                  height: _navigationHeight,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withValues(
-                      alpha: isDark ? 0.78 : 0.86,
-                    ),
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: isDark ? 0.10 : 0.08,
-                      ),
-                      width: 0.8,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: isDark ? 0.30 : 0.12,
-                        ),
-                        blurRadius: 30,
-                        spreadRadius: -4,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: _tabs.map((tab) {
-                      final isSelected =
-                          appController.selectedPageIndex.value ==
-                          tab.pageIndex;
-
-                      return Expanded(
-                        child: _FloatingNavItem(
-                          tab: tab,
-                          selected: isSelected,
-                          isDark: isDark,
-                          onTap: () {
-                            if (isSelected) {
-                              return;
-                            }
-
-                            appController.setPageIndex(tab.pageIndex);
-                          },
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
-
 
 // =============================================================================
 // FLOATING NAV ITEM
 // =============================================================================
 
-class _FloatingNavItem extends StatelessWidget {
+class _FloatingNavItem extends StatefulWidget {
   final _HomeTab tab;
   final bool selected;
   final bool isDark;
@@ -357,72 +340,147 @@ class _FloatingNavItem extends StatelessWidget {
   });
 
   @override
+  State<_FloatingNavItem> createState() => _FloatingNavItemState();
+}
+
+class _FloatingNavItemState extends State<_FloatingNavItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _bounceController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _yOffsetAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Controller for the iOS spring bounce effect
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    // Spring scale effect (1.0 -> 1.25 -> 1.0)
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.28)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.28, end: 1.0)
+            .chain(CurveTween(curve: Curves.elasticOut)),
+        weight: 65,
+      ),
+    ]).animate(_bounceController);
+
+    // Subtle upward jump during the bounce (-4px lift)
+    _yOffsetAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: -4.0)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: -4.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.elasticOut)),
+        weight: 65,
+      ),
+    ]).animate(_bounceController);
+
+    // Trigger bounce on initial load if pre-selected
+    if (widget.selected) {
+      _bounceController.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _FloatingNavItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Trigger the bounce sequence whenever this tab becomes selected
+    if (widget.selected && !oldWidget.selected) {
+      _bounceController.reset();
+      _bounceController.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _bounceController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     final activeColor = theme.colorScheme.primary;
-    final inactiveColor = theme.colorScheme.onSurfaceVariant;
+    final inactiveColor = widget.isDark
+        ? Colors.white.withValues(alpha: 0.55)
+        : Colors.black.withValues(alpha: 0.45);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.symmetric(horizontal: 3),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        decoration: BoxDecoration(
-          color: selected
-              ? activeColor.withValues(alpha: isDark ? 0.16 : 0.10)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(25),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // ---------------------------------------------------------------
-            // ICON
-            // ---------------------------------------------------------------
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              switchInCurve: Curves.easeOutBack,
-              switchOutCurve: Curves.easeIn,
-              transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(scale: animation, child: child),
-                );
-              },
-              child: Icon(
-                selected ? tab.activeIcon : tab.icon,
-                key: ValueKey('${tab.pageIndex}_$selected'),
-                size: 23,
-                color: selected ? activeColor : inactiveColor,
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: () {
+        Feedback.forTap(context);
+        widget.onTap();
+      },
+      child: AnimatedScale(
+        scale: _isPressed ? 0.90 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.decelerate,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+            color: widget.selected
+                ? activeColor.withValues(alpha: widget.isDark ? 0.18 : 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Bouncing Icon with scale & translation vertical lift
+              AnimatedBuilder(
+                animation: _bounceController,
+                builder: (context, child) {
+                  return Transform.translate(
+                    offset: Offset(0, _yOffsetAnimation.value),
+                    child: Transform.scale(
+                      scale: _scaleAnimation.value,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Icon(
+                  widget.selected ? widget.tab.activeIcon : widget.tab.icon,
+                  key: ValueKey('${widget.tab.pageIndex}_${widget.selected}'),
+                  size: 22,
+                  color: widget.selected ? activeColor : inactiveColor,
+                ),
               ),
-            ),
-
-            const SizedBox(height: 3),
-
-            // ---------------------------------------------------------------
-            // LABEL
-            // ---------------------------------------------------------------
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOut,
-              style: TextStyle(
-                fontSize: 10.5,
-                height: 1,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? activeColor : inactiveColor,
-                letterSpacing: -0.1,
+              const SizedBox(height: 2),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: widget.selected ? FontWeight.w700 : FontWeight.w500,
+                  color: widget.selected ? activeColor : inactiveColor,
+                  letterSpacing: -0.1,
+                ),
+                child: Text(
+                  widget.tab.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              child: Text(
-                tab.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -430,7 +488,7 @@ class _FloatingNavItem extends StatelessWidget {
 }
 
 // =============================================================================
-// HOME TAB
+// HOME TAB MODEL
 // =============================================================================
 
 class _HomeTab {
