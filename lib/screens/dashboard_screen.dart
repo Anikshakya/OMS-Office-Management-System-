@@ -25,6 +25,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const int _initialPage = 1000;
   late final PageController _pageController;
   late DateTime _selectedOnLeaveDate;
+  final ValueNotifier<bool> _showOnLeaveTopFade = ValueNotifier(false);
 
   @override
   void initState() {
@@ -36,6 +37,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _showOnLeaveTopFade.dispose();
     super.dispose();
   }
 
@@ -52,9 +54,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _onPageChanged(int index) {
+    _showOnLeaveTopFade.value = false;
     setState(() {
       _selectedOnLeaveDate = _getDateForPage(index);
     });
+  }
+
+  void _updateOnLeaveFades(ScrollNotification notification) {
+    final showTopFade = notification.metrics.pixels > 0;
+    if (_showOnLeaveTopFade.value != showTopFade) {
+      _showOnLeaveTopFade.value = showTopFade;
+    }
   }
 
   void _previousDay() {
@@ -111,7 +121,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildHeroBanner(BuildContext context, bool isDark, dynamic user, Employee emp) {
+  Widget _buildHeroBanner(
+    BuildContext context,
+    bool isDark,
+    dynamic user,
+    Employee emp,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -197,8 +212,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                       ],
-                    )
-                  )
+                    ),
+                  ),
                 ],
               ),
               Padding(
@@ -226,14 +241,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                      )
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
           );
-        }
+        },
       ),
     );
   }
@@ -424,122 +439,183 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
-    return ListView.separated(
-      itemCount: onLeaveList.length,
-      padding: const EdgeInsets.only(bottom: 86, left: 4, right: 4),
-      separatorBuilder: (context, index) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final req = onLeaveList[index];
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
 
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: AppColors.softShadow(isDark),
-            border: Border.all(
-              color: isDark ? AppColors.borderDark : AppColors.borderLight,
-              width: 1,
-            ),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _showOnLeaveDetailModal(req, isDark),
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Row(
-                  children: [
-                    AppAvatar(
-                      url: req.employeeAvatar,
-                      name: req.employeeName,
-                      radius: 22,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        _updateOnLeaveFades(notification);
+        return false;
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ListView.separated(
+            itemCount: onLeaveList.length,
+            padding: const EdgeInsets.only(bottom: 86, left: 4, right: 4),
+            separatorBuilder: (context, index) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final req = onLeaveList[index];
+
+              return Container(
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceDark : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: AppColors.softShadow(isDark),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.borderDark
+                        : AppColors.borderLight,
+                    width: 1,
+                  ),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showOnLeaveDetailModal(req, isDark),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  req.employeeName,
-                                  style: AppTypography.titleMedium(
-                                    isDark,
-                                  ).copyWith(fontWeight: FontWeight.w700),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: req.leaveType.color.withValues(
-                                    alpha: 0.12,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  req.leaveType.label,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: req.leaveType.color,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          AppAvatar(
+                            url: req.employeeAvatar,
+                            name: req.employeeName,
+                            radius: 22,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            req.isHalfDay
-                                ? 'Half Day Leave (${req.halfDayType ?? ""})'
-                                : '${req.durationDays.toInt()} Day(s) Leave',
-                            style: AppTypography.caption(isDark).copyWith(
-                              color: isDark
-                                  ? AppColors.textMutedDark
-                                  : AppColors.textMutedLight,
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.notes_rounded,
-                                size: 12,
-                                color: isDark
-                                    ? AppColors.textMutedDark
-                                    : AppColors.textMutedLight,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  'Reason: ${req.reason}',
-                                  style: AppTypography.bodyMedium(isDark)
-                                      .copyWith(
-                                        fontSize: 12,
-                                        fontStyle: FontStyle.italic,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        req.employeeName,
+                                        style: AppTypography.titleMedium(
+                                          isDark,
+                                        ).copyWith(fontWeight: FontWeight.w700),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                  overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: req.leaveType.color.withValues(
+                                          alpha: 0.12,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        req.leaveType.label,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: req.leaveType.color,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 2),
+                                Text(
+                                  req.isHalfDay
+                                      ? 'Half Day Leave (${req.halfDayType ?? ""})'
+                                      : '${req.durationDays.toInt()} Day(s) Leave',
+                                  style: AppTypography.caption(isDark).copyWith(
+                                    color: isDark
+                                        ? AppColors.textMutedDark
+                                        : AppColors.textMutedLight,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.notes_rounded,
+                                      size: 12,
+                                      color: isDark
+                                          ? AppColors.textMutedDark
+                                          : AppColors.textMutedLight,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        'Reason: ${req.reason}',
+                                        style: AppTypography.bodyMedium(isDark)
+                                            .copyWith(
+                                              fontSize: 12,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ],
+                  ),
+                ),
+              );
+            },
+          ),
+          ValueListenableBuilder<bool>(
+            valueListenable: _showOnLeaveTopFade,
+            builder: (context, showFade, child) => showFade
+                ? Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 40,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              backgroundColor,
+                              backgroundColor.withValues(alpha: 0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 64,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      backgroundColor.withValues(alpha: 0),
+                      backgroundColor,
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
