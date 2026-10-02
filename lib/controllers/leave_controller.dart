@@ -16,11 +16,11 @@ class LeaveController extends GetxController {
     isLoading.value = true;
     try {
       final response = await ApiRepo.apiGet(
-        apiPath: "employeeapp/employee-leaves/${user.id}",
+        apiPath: "employeeapp/employee-leaves",
       );
 
       if (response != null &&
-          response['success'] == true &&
+          response['status'] == "success" &&
           response['data'] != null) {
         final List<dynamic> data = response['data'];
         final List<LeaveRequest> fetchedLeaves = data.map((json) {
@@ -89,7 +89,7 @@ class LeaveController extends GetxController {
       leaveType: type,
       startDate: DateTime.tryParse(json['start_date'] ?? '') ?? DateTime.now(),
       endDate: DateTime.tryParse(json['end_date'] ?? '') ?? DateTime.now(),
-      durationDays: (json['total_days'] ?? 0).toDouble(),
+      durationDays: double.tryParse(json['total_days']?.toString() ?? '0') ?? 0.0,
       isHalfDay: json['leave_duration_type'] == 1,
       reason: json['leave_reason'] ?? '',
       status: status,

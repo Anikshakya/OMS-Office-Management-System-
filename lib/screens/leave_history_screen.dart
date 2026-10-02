@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../state/app_state.dart';
+import 'package:get/get.dart';
+import '../controllers/app_data_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common/ui_glass_container.dart';
@@ -8,19 +9,17 @@ import '../widgets/common/custom_inputs.dart';
 import '../widgets/common/custom_dialogs.dart';
 import '../widgets/common/app_avatar.dart';
 import '../models/leave_request.dart';
-import 'package:get/get.dart';
 import '../controllers/leave_controller.dart';
 
 class LeaveHistoryScreen extends StatefulWidget {
-  final AppState state;
-
-  const LeaveHistoryScreen({super.key, required this.state});
+  const LeaveHistoryScreen({super.key});
 
   @override
   State<LeaveHistoryScreen> createState() => _LeaveHistoryScreenState();
 }
 
 class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
+  AppDataController get _data => Get.find<AppDataController>();
   String _activeFilter = 'All';
   int _selectedYear = DateTime.now().year;
   final TextEditingController _searchController = TextEditingController();
@@ -260,8 +259,8 @@ class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
                                   'Cancel request ${req.id} for ${req.durationDays} day(s)?',
                               confirmLabel: 'Cancel Request',
                               isDestructive: true,
-                              onConfirm: () =>
-                                  Get.find<LeaveController>().cancelLeaveRequest(req.id),
+                              onConfirm: () => Get.find<LeaveController>()
+                                  .cancelLeaveRequest(req.id),
                             ),
                           );
                         },
@@ -305,7 +304,7 @@ class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final leaveController = Get.find<LeaveController>();
-    final isDark = widget.state.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Obx(() {
       if (leaveController.isLoading.value) {
@@ -326,7 +325,7 @@ class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
       }
 
       // Pre-calculate search filtered items for year context
-      final query = widget.state.leaveHistorySearchQuery.trim().toLowerCase();
+      final query = _data.leaveHistorySearchQuery.trim().toLowerCase();
       final yearFiltered = myHistory.where((req) {
         final matchesYear = req.startDate.year == _selectedYear;
         final matchesSearch =
@@ -347,46 +346,48 @@ class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
       }).toList();
 
       return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Row with Year Selector
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SizedBox(
-                    width: 240,
-                    child: AppSearchField(
-                      controller: _searchController,
-                      hint: 'Search by ID or reason...',
-                      onChanged: (val) {
-                        setState(
-                          () => widget.state.leaveHistorySearchQuery = val,
-                        );
-                      },
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Row with Year Selector
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SizedBox(
+                      width: 240,
+                      child: AppSearchField(
+                        controller: _searchController,
+                        hint: 'Search by ID or reason...',
+                        onChanged: (val) {
+                          setState(() => _data.leaveHistorySearchQuery = val);
+                        },
+                      ),
                     ),
-                  ),
-                  _buildProfessionalYearSelector(availableYears, isDark),
-                ],
-              ),
-              const SizedBox(height: 16),
+                    _buildProfessionalYearSelector(availableYears, isDark),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-              // Filter Pills Row with Counts
-              _buildFilterPills(yearFiltered, isDark),
+                // Filter Pills Row with Counts
+                _buildFilterPills(yearFiltered, isDark),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Leave Application Cards
-              _buildMonthSection('Leaves in $_selectedYear', filtered, isDark),
-            ],
+                // Leave Application Cards
+                _buildMonthSection(
+                  'Leaves in $_selectedYear',
+                  filtered,
+                  isDark,
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
     });
   }
 
@@ -607,128 +608,128 @@ class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
   }
 
   Widget _buildLeaveCard(LeaveRequest req, bool isDark) {
-  final durationTitle = req.isHalfDay
-      ? 'Half Day Application'
-      : (req.durationDays == 1.0
-            ? 'Full Day Application'
-            : '${req.durationDays.toInt()} Days Application');
+    final durationTitle = req.isHalfDay
+        ? 'Half Day Application'
+        : (req.durationDays == 1.0
+              ? 'Full Day Application'
+              : '${req.durationDays.toInt()} Days Application');
 
-  final dateText = req.isHalfDay || req.durationDays == 1.0
-      ? _formatShortDate(req.startDate)
-      : '${_formatShortDate(req.startDate)} - ${_formatShortDate(req.endDate)}';
+    final dateText = req.isHalfDay || req.durationDays == 1.0
+        ? _formatShortDate(req.startDate)
+        : '${_formatShortDate(req.startDate)} - ${_formatShortDate(req.endDate)}';
 
-  return Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    decoration: BoxDecoration(
-      color: isDark ? AppColors.surfaceDark : Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: AppColors.softShadow(isDark),
-      border: Border.all(
-        color: isDark ? AppColors.borderDark : AppColors.borderLight,
-        width: 1,
-      ),
-    ),
-    child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _showLeaveDetailDialog(req, isDark),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          durationTitle,
-                          style: AppTypography.caption(isDark).copyWith(
+        boxShadow: AppColors.softShadow(isDark),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showLeaveDetailDialog(req, isDark),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            durationTitle,
+                            style: AppTypography.caption(isDark).copyWith(
+                              color: isDark
+                                  ? AppColors.textMutedDark
+                                  : AppColors.textMutedLight,
+                              fontSize: 11,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: req.status.backgroundColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              req.status.label,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: req.status.foregroundColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        dateText,
+                        style: AppTypography.titleMedium(
+                          isDark,
+                        ).copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        req.leaveType.label,
+                        style: AppTypography.caption(isDark).copyWith(
+                          color: req.leaveType.color,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.notes_rounded,
+                            size: 12,
                             color: isDark
                                 ? AppColors.textMutedDark
                                 : AppColors.textMutedLight,
-                            fontSize: 11,
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: req.status.backgroundColor,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            req.status.label,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: req.status.foregroundColor,
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'Reason: ${req.reason}',
+                              style: AppTypography.bodyMedium(isDark).copyWith(
+                                fontSize: 12,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      dateText,
-                      style: AppTypography.titleMedium(
-                        isDark,
-                      ).copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      req.leaveType.label,
-                      style: AppTypography.caption(isDark).copyWith(
-                        color: req.leaveType.color,
-                        fontWeight: FontWeight.w600,
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.notes_rounded,
-                          size: 12,
-                          color: isDark
-                              ? AppColors.textMutedDark
-                              : AppColors.textMutedLight,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            'Reason: ${req.reason}',
-                            style: AppTypography.bodyMedium(isDark).copyWith(
-                              fontSize: 12,
-                              fontStyle: FontStyle.italic,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: isDark
-                    ? AppColors.textMutedDark
-                    : AppColors.textMutedLight,
-                size: 20,
-              ),
-            ],
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: isDark
+                      ? AppColors.textMutedDark
+                      : AppColors.textMutedLight,
+                  size: 20,
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   String _formatShortDate(DateTime dt) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];

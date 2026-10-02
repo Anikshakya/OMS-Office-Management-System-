@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import '../state/app_state.dart';
+import 'package:get/get.dart';
+import '../controllers/app_data_controller.dart';
+import '../controllers/app_controller.dart';
+import '../models/toast_notification.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common/ui_glass_container.dart';
@@ -26,15 +29,15 @@ extension LeaveTypeColorX on LeaveType {
 }
 
 class ApplyLeaveScreen extends StatefulWidget {
-  final AppState state;
-
-  const ApplyLeaveScreen({super.key, required this.state});
+  const ApplyLeaveScreen({super.key});
 
   @override
   State<ApplyLeaveScreen> createState() => _ApplyLeaveScreenState();
 }
 
 class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
+  AppDataController get _data => Get.find<AppDataController>();
+  AppController get _appController => Get.find<AppController>();
   final _formKey = GlobalKey<FormState>();
 
   LeaveType _selectedType = LeaveType.casual;
@@ -50,8 +53,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   late String _selectedSupervisor;
   String? _coveringEmployee;
 
-  final TextEditingController _reasonController =
-      TextEditingController(text: 'Personal leave and medical checkup');
+  final TextEditingController _reasonController = TextEditingController(
+    text: 'Personal leave and medical checkup',
+  );
   final TextEditingController _emergencyContactController =
       TextEditingController(text: '+1 (555) 234-5678');
   bool _isSubmitting = false;
@@ -60,9 +64,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   void initState() {
     super.initState();
     // Auto-select reporting manager
-    _selectedSupervisor = widget.state.currentUser.managerName;
-    if (widget.state.employees.isNotEmpty) {
-      _coveringEmployee = widget.state.employees.first.name;
+    _selectedSupervisor = _data.currentUser.managerName;
+    if (_data.employees.isNotEmpty) {
+      _coveringEmployee = _data.employees.first.name;
     }
   }
 
@@ -82,7 +86,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
 
   String get _durationLabel {
     if (_durationType == 'half') return '0.5 Day (Half Day - $_halfDayPeriod)';
-    if (_durationType == 'quarter') return '0.25 Day (Quarter Day - $_quarterPeriod)';
+    if (_durationType == 'quarter') {
+      return '0.25 Day (Quarter Day - $_quarterPeriod)';
+    }
     final days = _calculatedDays.toInt();
     return '$days Day${days > 1 ? "s" : ""} (Full Day)';
   }
@@ -137,7 +143,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
 
     final reason = _reasonController.text.trim();
     if (reason.isEmpty) {
-      widget.state.showToast(
+      _appController.showToast(
         'Validation Error',
         'Please enter a valid reason for your leave.',
         ToastType.error,
@@ -153,7 +159,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
         ? _halfDayPeriod
         : (_durationType == 'quarter' ? _quarterPeriod : null);
 
-    widget.state.submitLeaveRequest(
+    _data.submitLeaveRequest(
       leaveType: _selectedType,
       startDate: _startDate,
       endDate: _endDate,
@@ -165,15 +171,16 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     );
 
     setState(() => _isSubmitting = false);
-    widget.state.setPageIndex(4); // Navigate to Leaves list
+    _appController.setPageIndex(4);
+    Get.back();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.state.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Fetch metrics for selected leave type
-    final selectedBalance = widget.state.currentUser.leaveBalances[_selectedType];
+    final selectedBalance = _data.currentUser.leaveBalances[_selectedType];
     final usedDays = selectedBalance?.used ?? 0;
     final remainingDays = selectedBalance?.remaining ?? 0;
 
@@ -196,7 +203,8 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                       // Fetch color directly from the enum
                       final leaveTypeColor = _selectedType.color;
 
-                      final double totalAllocated = (usedDays + remainingDays).toDouble();
+                      final double totalAllocated = (usedDays + remainingDays)
+                          .toDouble();
                       final double progress = totalAllocated > 0
                           ? (usedDays / totalAllocated).clamp(0.0, 1.0)
                           : 0.0;
@@ -212,31 +220,38 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                               Expanded(
                                 child: Text(
                                   '${_selectedType.label} Leave',
-                                  style: AppTypography.titleLarge(isDark).copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: -0.3,
-                                  ),
+                                  style: AppTypography.titleLarge(isDark)
+                                      .copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: -0.3,
+                                      ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: leaveTypeColor.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: leaveTypeColor.withValues(alpha: 0.25),
+                                    color: leaveTypeColor.withValues(
+                                      alpha: 0.25,
+                                    ),
                                     width: 1,
                                   ),
                                 ),
                                 child: Text(
                                   '$remainingDays ${remainingDays == 1 ? 'day' : 'days'} left',
-                                  style: AppTypography.labelMedium(isDark).copyWith(
-                                    color: leaveTypeColor,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                  style: AppTypography.labelMedium(isDark)
+                                      .copyWith(
+                                        color: leaveTypeColor,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                 ),
                               ),
                             ],
@@ -252,7 +267,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                               backgroundColor: isDark
                                   ? Colors.white.withValues(alpha: 0.08)
                                   : Colors.black.withValues(alpha: 0.06),
-                              valueColor: AlwaysStoppedAnimation<Color>(leaveTypeColor),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                leaveTypeColor,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -263,17 +280,23 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                             children: [
                               Text(
                                 'Used: $usedDays ${usedDays == 1 ? 'day' : 'days'}',
-                                style: AppTypography.bodyMedium(isDark).copyWith(
-                                  color: isDark ? Colors.white60 : Colors.black54,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: AppTypography.bodyMedium(isDark)
+                                    .copyWith(
+                                      color: isDark
+                                          ? Colors.white60
+                                          : Colors.black54,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                               ),
                               Text(
                                 'Total: ${totalAllocated.toInt()} ${totalAllocated == 1 ? 'day' : 'days'}',
-                                style: AppTypography.bodyMedium(isDark).copyWith(
-                                  color: isDark ? Colors.white60 : Colors.black54,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: AppTypography.bodyMedium(isDark)
+                                    .copyWith(
+                                      color: isDark
+                                          ? Colors.white60
+                                          : Colors.black54,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
                             ],
                           ),
@@ -363,10 +386,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
           onTap: () => setState(() => _selectedType = type),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 10,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
                   ? color
@@ -375,9 +395,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
               border: Border.all(
                 color: isSelected
                     ? color
-                    : (isDark
-                          ? AppColors.borderDark
-                          : AppColors.borderLight),
+                    : (isDark ? AppColors.borderDark : AppColors.borderLight),
                 width: 1.5,
               ),
               boxShadow: isSelected ? AppColors.softShadow(isDark) : null,
@@ -395,9 +413,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                   type.label,
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                     color: isSelected
                         ? Colors.white
                         : (isDark
@@ -435,7 +451,10 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Start Date (From)', style: AppTypography.caption(isDark)),
+                        Text(
+                          'Start Date (From)',
+                          style: AppTypography.caption(isDark),
+                        ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
@@ -448,9 +467,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                             Expanded(
                               child: Text(
                                 _formatDate(_startDate),
-                                style: AppTypography.bodyMedium(isDark).copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: AppTypography.bodyMedium(
+                                  isDark,
+                                ).copyWith(fontWeight: FontWeight.bold),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -475,7 +494,10 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('End Date (To)', style: AppTypography.caption(isDark)),
+                        Text(
+                          'End Date (To)',
+                          style: AppTypography.caption(isDark),
+                        ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
@@ -488,9 +510,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                             Expanded(
                               child: Text(
                                 _formatDate(_endDate),
-                                style: AppTypography.bodyMedium(isDark).copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: AppTypography.bodyMedium(
+                                  isDark,
+                                ).copyWith(fontWeight: FontWeight.bold),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -511,7 +533,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
           // Responsive Duration Selector (Full, Half, Quarter)
           Text(
             'Duration Type',
-            style: AppTypography.caption(isDark).copyWith(fontWeight: FontWeight.bold),
+            style: AppTypography.caption(
+              isDark,
+            ).copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
 
@@ -572,18 +596,19 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
             Wrap(
               spacing: 6,
               runSpacing: 6,
-              children: [
-                'Q1 (Morning)',
-                'Q2 (Midday)',
-                'Q3 (Afternoon)',
-                'Q4 (Evening)',
-              ].map((q) {
-                return ChoiceChip(
-                  label: Text(q),
-                  selected: _quarterPeriod == q,
-                  onSelected: (_) => setState(() => _quarterPeriod = q),
-                );
-              }).toList(),
+              children:
+                  [
+                    'Q1 (Morning)',
+                    'Q2 (Midday)',
+                    'Q3 (Afternoon)',
+                    'Q4 (Evening)',
+                  ].map((q) {
+                    return ChoiceChip(
+                      label: Text(q),
+                      selected: _quarterPeriod == q,
+                      onSelected: (_) => setState(() => _quarterPeriod = q),
+                    );
+                  }).toList(),
             ),
           ],
 
@@ -600,9 +625,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
               children: [
                 Text(
                   'Calculated Leave Duration:',
-                  style: AppTypography.caption(isDark).copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTypography.caption(
+                    isDark,
+                  ).copyWith(fontWeight: FontWeight.w600),
                 ),
                 Flexible(
                   child: Text(
@@ -626,7 +651,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   Widget _buildSupervisorAndHandoverCard(bool isDark) {
     // List of supervisors/managers available for selection
     final supervisors = <String>{
-      widget.state.currentUser.managerName,
+      _data.currentUser.managerName,
       'Sarah Jenkins (VP Design)',
       'Marcus Vance (VP Engineering)',
       'Elena Rostova (Lead HR)',
@@ -644,9 +669,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
             initialValue: _selectedSupervisor,
             decoration: InputDecoration(
               labelText: 'Assigned Supervisor / Approver (Auto-Selected)',
-              labelStyle: AppTypography.caption(isDark).copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              labelStyle: AppTypography.caption(
+                isDark,
+              ).copyWith(fontWeight: FontWeight.bold),
               prefixIcon: const Icon(
                 Icons.supervisor_account_rounded,
                 size: 20,
@@ -696,7 +721,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                 vertical: 12,
               ),
             ),
-            items: widget.state.employees.map((emp) {
+            items: _data.employees.map((emp) {
               return DropdownMenuItem(
                 value: emp.name,
                 child: Text(

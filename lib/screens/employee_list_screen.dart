@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import '../state/app_state.dart';
+import 'package:get/get.dart';
+import '../controllers/app_data_controller.dart';
+import '../controllers/app_controller.dart';
+import '../models/toast_notification.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common/ui_glass_container.dart';
@@ -9,15 +12,15 @@ import '../widgets/common/app_avatar.dart';
 import '../models/employee.dart';
 
 class EmployeeListScreen extends StatefulWidget {
-  final AppState state;
-
-  const EmployeeListScreen({super.key, required this.state});
+  const EmployeeListScreen({super.key});
 
   @override
   State<EmployeeListScreen> createState() => _EmployeeListScreenState();
 }
 
 class _EmployeeListScreenState extends State<EmployeeListScreen> {
+  AppDataController get _data => Get.find<AppDataController>();
+  AppController get _appController => Get.find<AppController>();
   final TextEditingController _searchController = TextEditingController();
 
   final List<String> _departments = const [
@@ -35,14 +38,17 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   }
 
   void _openEmployeeProfile(Employee emp) {
-    final isDark = widget.state.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
       context: context,
       builder: (ctx) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: GlassContainer(
@@ -55,11 +61,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                   // Header Row
                   Row(
                     children: [
-                      AppAvatar(
-                        url: emp.avatarUrl,
-                        name: emp.name,
-                        radius: 30,
-                      ),
+                      AppAvatar(url: emp.avatarUrl, name: emp.name, radius: 30),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -67,9 +69,9 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                           children: [
                             Text(
                               emp.name,
-                              style: AppTypography.titleLarge(isDark).copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: AppTypography.titleLarge(
+                                isDark,
+                              ).copyWith(fontWeight: FontWeight.bold),
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 2),
@@ -119,12 +121,42 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                   const SizedBox(height: 14),
 
                   // Metadata Info List
-                  _buildModalInfoRow(Icons.badge_outlined, 'Employee Code', emp.employeeCode, isDark),
-                  _buildModalInfoRow(Icons.email_outlined, 'Email Address', emp.email, isDark),
-                  _buildModalInfoRow(Icons.phone_outlined, 'Contact Phone', emp.phone, isDark),
-                  _buildModalInfoRow(Icons.location_on_outlined, 'Location', emp.location, isDark),
-                  _buildModalInfoRow(Icons.event_available_outlined, 'Joined Date', emp.joinDate, isDark),
-                  _buildModalInfoRow(Icons.supervisor_account_outlined, 'Manager', emp.managerName, isDark),
+                  _buildModalInfoRow(
+                    Icons.badge_outlined,
+                    'Employee Code',
+                    emp.employeeCode,
+                    isDark,
+                  ),
+                  _buildModalInfoRow(
+                    Icons.email_outlined,
+                    'Email Address',
+                    emp.email,
+                    isDark,
+                  ),
+                  _buildModalInfoRow(
+                    Icons.phone_outlined,
+                    'Contact Phone',
+                    emp.phone,
+                    isDark,
+                  ),
+                  _buildModalInfoRow(
+                    Icons.location_on_outlined,
+                    'Location',
+                    emp.location,
+                    isDark,
+                  ),
+                  _buildModalInfoRow(
+                    Icons.event_available_outlined,
+                    'Joined Date',
+                    emp.joinDate,
+                    isDark,
+                  ),
+                  _buildModalInfoRow(
+                    Icons.supervisor_account_outlined,
+                    'Manager',
+                    emp.managerName,
+                    isDark,
+                  ),
 
                   const SizedBox(height: 18),
 
@@ -137,7 +169,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                           icon: Icons.phone_rounded,
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           onPressed: () {
-                            widget.state.showToast(
+                            _appController.showToast(
                               'Calling ${emp.name}',
                               'Initiating call to ${emp.phone}...',
                               ToastType.info,
@@ -152,7 +184,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                           icon: Icons.email_rounded,
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           onPressed: () {
-                            widget.state.showToast(
+                            _appController.showToast(
                               'Compose Email',
                               'Opening email client to mail ${emp.email}...',
                               ToastType.info,
@@ -167,7 +199,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                           icon: Icons.chat_bubble_rounded,
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           onPressed: () {
-                            widget.state.showToast(
+                            _appController.showToast(
                               'Instant Message',
                               'Opening direct message chat with ${emp.name}...',
                               ToastType.info,
@@ -186,7 +218,12 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
     );
   }
 
-  Widget _buildModalInfoRow(IconData icon, String label, String value, bool isDark) {
+  Widget _buildModalInfoRow(
+    IconData icon,
+    String label,
+    String value,
+    bool isDark,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -201,17 +238,17 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
             width: 110,
             child: Text(
               label,
-              style: AppTypography.caption(isDark).copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppTypography.caption(
+                isDark,
+              ).copyWith(fontWeight: FontWeight.w600),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: AppTypography.bodyMedium(isDark).copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTypography.bodyMedium(
+                isDark,
+              ).copyWith(fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -222,8 +259,8 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.state.isDarkMode;
-    final employees = widget.state.filteredEmployees;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final employees = _data.filteredEmployees;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
@@ -238,7 +275,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                 controller: _searchController,
                 hint: 'Search name, role, email...',
                 onChanged: (val) {
-                  setState(() => widget.state.employeeSearchQuery = val);
+                  setState(() => _data.employeeSearchQuery = val);
                 },
               ),
 
@@ -274,11 +311,11 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
         ),
         child: Row(
           children: _departments.map((dept) {
-            final isSelected = widget.state.employeeDeptFilter == dept;
+            final isSelected = _data.employeeDeptFilter == dept;
 
             return GestureDetector(
               onTap: () {
-                setState(() => widget.state.employeeDeptFilter = dept);
+                setState(() => _data.employeeDeptFilter = dept);
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
@@ -351,8 +388,8 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
                     onPressed: () {
                       setState(() {
                         _searchController.clear();
-                        widget.state.employeeSearchQuery = '';
-                        widget.state.employeeDeptFilter = 'All';
+                        _data.employeeSearchQuery = '';
+                        _data.employeeDeptFilter = 'All';
                       });
                     },
                   ),

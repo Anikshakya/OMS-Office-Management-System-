@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:oms/controllers/auth_controller.dart';
-import '../state/app_state.dart';
+import '../controllers/app_data_controller.dart';
+import '../controllers/app_controller.dart';
+import '../controllers/theme_controller.dart';
+import '../models/toast_notification.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common/ui_glass_container.dart';
@@ -12,32 +15,31 @@ import '../widgets/profile/edit_profile_dialog.dart';
 import '../models/employee.dart';
 
 class EmployeeProfileScreen extends StatefulWidget {
-  final AppState state;
   final Employee? employee;
 
-  const EmployeeProfileScreen({super.key, required this.state, this.employee});
+  const EmployeeProfileScreen({super.key, this.employee});
 
   @override
   State<EmployeeProfileScreen> createState() => _EmployeeProfileScreenState();
 }
 
 class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
+  AppDataController get _data => Get.find<AppDataController>();
+  AppController get _appController => Get.find<AppController>();
+  ThemeController get _themeController => Get.find<ThemeController>();
+
   int _activeTab = 0;
 
   void _showEditProfileModal() {
-    showDialog(
-      context: context,
-      builder: (ctx) => EditProfileDialog(state: widget.state),
-    );
+    showDialog(context: context, builder: (ctx) => const EditProfileDialog());
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.state.isDarkMode;
-    final emp = widget.employee ?? widget.state.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final emp = widget.employee ?? _data.currentUser;
     final isSelf =
-        widget.employee == null ||
-        widget.employee!.id == widget.state.currentUser.id;
+        widget.employee == null || widget.employee!.id == _data.currentUser.id;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
@@ -318,7 +320,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
           Switch.adaptive(
             value: isDark,
             activeTrackColor: AppColors.primary,
-            onChanged: (val) => widget.state.toggleTheme(),
+            onChanged: (_) => _themeController.toggleTheme(),
           ),
         ],
       ),
@@ -463,7 +465,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                     vertical: 6,
                   ),
                   onPressed: () {
-                    widget.state.showToast(
+                    _appController.showToast(
                       'Document Viewer',
                       'Opening ${doc.title}...',
                       ToastType.info,

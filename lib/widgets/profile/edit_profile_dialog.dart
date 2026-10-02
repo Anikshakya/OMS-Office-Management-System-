@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../state/app_state.dart';
+import 'package:get/get.dart';
+import '../../controllers/app_data_controller.dart';
+import '../../controllers/app_controller.dart';
+import '../../models/toast_notification.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../common/ui_glass_container.dart';
@@ -7,15 +10,15 @@ import '../common/custom_buttons.dart';
 import '../common/custom_inputs.dart';
 
 class EditProfileDialog extends StatefulWidget {
-  final AppState state;
-
-  const EditProfileDialog({super.key, required this.state});
+  const EditProfileDialog({super.key});
 
   @override
   State<EditProfileDialog> createState() => _EditProfileDialogState();
 }
 
 class _EditProfileDialogState extends State<EditProfileDialog> {
+  AppDataController get _data => Get.find<AppDataController>();
+  AppController get _appController => Get.find<AppController>();
   late TextEditingController _nameController;
   late TextEditingController _designationController;
   late TextEditingController _departmentController;
@@ -31,7 +34,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   @override
   void initState() {
     super.initState();
-    final user = widget.state.currentUser;
+    final user = _data.currentUser;
     _nameController = TextEditingController(text: user.name);
     _designationController = TextEditingController(text: user.designation);
     _departmentController = TextEditingController(text: user.department);
@@ -64,7 +67,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   void _handleSave() {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      widget.state.showToast(
+      _appController.showToast(
         'Validation Error',
         'Name cannot be empty.',
         ToastType.error,
@@ -72,7 +75,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       return;
     }
 
-    widget.state.updateUserProfile(
+    _data.updateUserProfile(
       name: name,
       designation: _designationController.text.trim(),
       department: _departmentController.text.trim(),
@@ -86,7 +89,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       managerName: _managerController.text.trim(),
     );
 
-    widget.state.showToast(
+    _appController.showToast(
       'Profile Updated',
       'Your profile details have been saved successfully.',
       ToastType.success,
@@ -97,7 +100,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.state.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -131,9 +134,9 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                       const SizedBox(width: 10),
                       Text(
                         'Edit Profile Information',
-                        style: AppTypography.titleLarge(isDark).copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AppTypography.titleLarge(
+                          isDark,
+                        ).copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),

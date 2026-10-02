@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:oms/models/leave_request.dart';
 import 'package:oms/widgets/common/ui_glass_container.dart';
-import '../state/app_state.dart';
+import '../controllers/app_data_controller.dart';
+import '../controllers/app_controller.dart';
+import '../models/toast_notification.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common/custom_buttons.dart';
 import '../widgets/common/app_avatar.dart';
 
 class DashboardScreen extends StatefulWidget {
-  final AppState state;
-
-  const DashboardScreen({super.key, required this.state});
+  const DashboardScreen({super.key});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  AppDataController get _data => Get.find<AppDataController>();
+  AppController get _appController => Get.find<AppController>();
   static const int _initialPage = 1000;
   late final PageController _pageController;
   late DateTime _selectedOnLeaveDate;
@@ -86,8 +89,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.state.isDarkMode;
-    final user = widget.state.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final user = _data.currentUser;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -190,7 +193,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => widget.state.setPageIndex(1),
+                  onPressed: () => _appController.setPageIndex(1),
                   icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
                   label: const Text('Apply Leave'),
                   style: ElevatedButton.styleFrom(
@@ -207,7 +210,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => widget.state.setPageIndex(3),
+                  onPressed: () => _appController.setPageIndex(3),
                   icon: const Icon(
                     Icons.star_outline_rounded,
                     size: 18,
@@ -390,7 +393,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildLeaveCardContent(DateTime date, bool isDark) {
-    final onLeaveList = widget.state.getEmployeesOnLeaveForDate(date);
+    final onLeaveList = _data.getEmployeesOnLeaveForDate(date);
 
     if (onLeaveList.isEmpty) {
       return Center(
@@ -641,7 +644,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           label: 'Call',
                           icon: Icons.phone_rounded,
                           onPressed: () {
-                            widget.state.showToast(
+                            _appController.showToast(
                               'Call Employee',
                               'Dialing ${req.employeeName}...',
                               ToastType.info,
@@ -655,7 +658,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           label: 'Email',
                           icon: Icons.email_rounded,
                           onPressed: () {
-                            widget.state.showToast(
+                            _appController.showToast(
                               'Compose Email',
                               'Opening mail client to email ${req.employeeName}...',
                               ToastType.info,

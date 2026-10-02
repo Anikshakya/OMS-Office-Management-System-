@@ -1,6 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../state/app_state.dart';
+import 'package:get/get.dart';
+import '../../controllers/app_controller.dart';
+import '../../controllers/theme_controller.dart';
+import '../../models/toast_notification.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../common/custom_buttons.dart';
@@ -65,14 +67,12 @@ const List<NavItem> kNavigationItems = [
 ];
 
 class ResponsiveNavigationShell extends StatelessWidget {
-  final AppState state;
   final Widget body;
 
-  const ResponsiveNavigationShell({
-    super.key,
-    required this.state,
-    required this.body,
-  });
+  const ResponsiveNavigationShell({super.key, required this.body});
+
+  AppController get _appController => Get.find<AppController>();
+  ThemeController get _themeController => Get.find<ThemeController>();
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +81,9 @@ class ResponsiveNavigationShell extends StatelessWidget {
 
     return Scaffold(
       extendBody: true,
-      backgroundColor: Colors.transparent,
-      bottomNavigationBar: isDesktop ? null : _buildBottomNavigationBar(),
+        bottomNavigationBar: isDesktop
+          ? null
+          : _buildBottomNavigationBar(context),
       body: SafeArea(
         bottom: false,
         child: Row(
@@ -103,15 +104,16 @@ class ResponsiveNavigationShell extends StatelessWidget {
   }
 
   Widget _buildTopAppBar(BuildContext context, {required bool isDesktop}) {
-    final isDark = state.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentNav = kNavigationItems.firstWhere(
-      (item) => item.index == state.selectedPageIndex,
+      (item) => item.index == _appController.selectedPageIndex.value,
       orElse: () => kNavigationItems[0],
     );
 
     // Apply Leave (index 1) and Appraisal (index 3) are separate sub-pages with back buttons!
     final isSubPage =
-        state.selectedPageIndex == 1 || state.selectedPageIndex == 3;
+        _appController.selectedPageIndex.value == 1 ||
+        _appController.selectedPageIndex.value == 3;
 
     return Container(
       height: 60,
@@ -131,7 +133,7 @@ class ResponsiveNavigationShell extends StatelessWidget {
             AppIconButton(
               icon: Icons.arrow_back_ios_new_rounded,
               size: 36,
-              onPressed: () => state.setPageIndex(0),
+              onPressed: () => _appController.setPageIndex(0),
               tooltip: 'Back to Dashboard',
             ),
             const SizedBox(width: 12),
@@ -167,7 +169,7 @@ class ResponsiveNavigationShell extends StatelessWidget {
                 icon: Icons.notifications_none_rounded,
                 size: 38,
                 onPressed: () {
-                  state.showToast(
+                  _appController.showToast(
                     'Notifications',
                     'Annual performance review submissions are now open.',
                     ToastType.info,
@@ -190,7 +192,6 @@ class ResponsiveNavigationShell extends StatelessWidget {
           ),
 
           const SizedBox(width: 10),
-
           // Apply Leave quick action button in header
           Container(
             height: 36,
@@ -208,7 +209,7 @@ class ResponsiveNavigationShell extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () => state.setPageIndex(1),
+                onTap: () => _appController.setPageIndex(1),
                 borderRadius: BorderRadius.circular(10),
                 child: const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 12),
@@ -235,10 +236,12 @@ class ResponsiveNavigationShell extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomNavigationBar() {
-    final isDark = state.isDarkMode;
+  Widget _buildBottomNavigationBar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     const bottomNavPageIndices = [0, 4, 5, 2];
-    final selectedIndex = bottomNavPageIndices.indexOf(state.selectedPageIndex);
+    final selectedIndex = bottomNavPageIndices.indexOf(
+      _appController.selectedPageIndex.value,
+    );
     final items = bottomNavPageIndices
         .map((index) => kNavigationItems[index])
         .toList();
@@ -293,10 +296,10 @@ class ResponsiveNavigationShell extends StatelessWidget {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(22),
-                      onTap: () => state.setPageIndex(bottomNavPageIndices[i]),
+                      onTap: () =>
+                          _appController.setPageIndex(bottomNavPageIndices[i]),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeOutCubic,
                         decoration: BoxDecoration(
                           color: isSelected
                               ? AppColors.primary.withValues(alpha: 0.14)
@@ -343,7 +346,7 @@ class ResponsiveNavigationShell extends StatelessWidget {
   }
 
   Widget _buildSidebar(BuildContext context) {
-    final isDark = state.isDarkMode;
+    final isDark = _themeController.isDarkMode;
 
     return Container(
       width: 240,
@@ -398,10 +401,11 @@ class ResponsiveNavigationShell extends StatelessWidget {
               separatorBuilder: (_, index) => const SizedBox(height: 4),
               itemBuilder: (context, index) {
                 final item = kNavigationItems[index];
-                final isSelected = state.selectedPageIndex == item.index;
+                final isSelected =
+                    _appController.selectedPageIndex.value == item.index;
 
                 return InkWell(
-                  onTap: () => state.setPageIndex(item.index),
+                  onTap: () => _appController.setPageIndex(item.index),
                   borderRadius: BorderRadius.circular(10),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
@@ -463,7 +467,7 @@ class ResponsiveNavigationShell extends StatelessWidget {
                 Switch.adaptive(
                   value: isDark,
                   activeTrackColor: AppColors.primary,
-                  onChanged: (_) => state.toggleTheme(),
+                  onChanged: (_) => _themeController.toggleTheme(),
                 ),
               ],
             ),

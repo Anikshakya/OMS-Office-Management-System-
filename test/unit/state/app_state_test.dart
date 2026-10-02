@@ -1,26 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oms/state/app_state.dart';
+import 'package:oms/controllers/app_data_controller.dart';
 import 'package:oms/models/leave_request.dart';
 import 'package:oms/models/appraisal.dart';
 import 'package:get/get.dart';
 import 'package:oms/controllers/user_controller.dart';
 import 'package:oms/controllers/app_controller.dart';
+import 'package:oms/controllers/theme_controller.dart';
+import 'package:oms/services/theme_service.dart';
 import 'package:flutter/services.dart';
 
+class _MemoryThemeService implements ThemeService {
+  ThemeMode mode = ThemeMode.dark;
+
+  @override
+  ThemeMode loadThemeMode() => mode;
+
+  @override
+  Future<void> saveThemeMode(ThemeMode mode) async {
+    this.mode = mode;
+  }
+}
+
 void main() {
-  group('AppState Tests', () {
-    late AppState appState;
+  group('App controller tests', () {
+    late AppDataController dataController;
+    late AppController appController;
+    late ThemeController themeController;
 
     setUp(() {
       TestWidgetsFlutterBinding.ensureInitialized();
-      const MethodChannel('plugins.flutter.io/path_provider')
-          .setMockMethodCallHandler((MethodCall methodCall) async {
+      const MethodChannel(
+        'plugins.flutter.io/path_provider',
+      // ignore: deprecated_member_use
+      ).setMockMethodCallHandler((MethodCall methodCall) async {
         return '.';
       });
       Get.put(UserController());
-      Get.put(AppController());
-      appState = AppState();
+      appController = Get.put(AppController());
+      dataController = Get.put(AppDataController());
+      themeController = Get.put(
+        ThemeController(themeService: _MemoryThemeService()),
+      );
     });
 
     tearDown(() {
@@ -28,21 +49,21 @@ void main() {
     });
 
     test('Theme toggles correctly', () {
-      expect(appState.themeMode, ThemeMode.dark);
-      appState.toggleTheme();
-      expect(appState.themeMode, ThemeMode.light);
-      appState.toggleTheme();
-      expect(appState.themeMode, ThemeMode.dark);
+      expect(themeController.themeMode.value, ThemeMode.dark);
+      themeController.toggleTheme();
+      expect(themeController.themeMode.value, ThemeMode.light);
+      themeController.toggleTheme();
+      expect(themeController.themeMode.value, ThemeMode.dark);
     });
 
     test('Page index updates correctly', () {
-      expect(appState.selectedPageIndex, 0);
-      appState.setPageIndex(2);
-      expect(appState.selectedPageIndex, 2);
+      expect(appController.selectedPageIndex.value, 0);
+      appController.setPageIndex(2);
+      expect(appController.selectedPageIndex.value, 2);
     });
 
     test('updateUserProfile modifies user data', () {
-      appState.updateUserProfile(
+      dataController.updateUserProfile(
         name: 'New Name',
         designation: 'New Desig',
         department: 'IT',
@@ -56,16 +77,23 @@ void main() {
         managerName: 'New Manager',
       );
 
-      expect(appState.currentUser.name, 'New Name');
-      expect(appState.currentUser.department, 'IT');
-      expect(appState.employees.firstWhere((e) => e.id == appState.currentUser.id).name, 'New Name');
+      expect(dataController.currentUser.name, 'New Name');
+      expect(dataController.currentUser.department, 'IT');
+      expect(
+        dataController.employees
+            .firstWhere((e) => e.id == dataController.currentUser.id)
+            .name,
+        'New Name',
+      );
     });
 
     test('submitLeaveRequest adds to list and updates quota', () {
-      final initialLength = appState.leaveRequests.length;
-      final initialQuota = appState.leaveQuotas.firstWhere((q) => q.leaveType == LeaveType.annual).pendingDays;
+      final initialLength = dataController.leaveRequests.length;
+      final initialQuota = dataController.leaveQuotas
+          .firstWhere((q) => q.leaveType == LeaveType.annual)
+          .pendingDays;
 
-      appState.submitLeaveRequest(
+      dataController.submitLeaveRequest(
         leaveType: LeaveType.annual,
         startDate: DateTime.now(),
         endDate: DateTime.now().add(const Duration(days: 1)),
@@ -74,14 +102,16 @@ void main() {
         reason: 'Vacation',
       );
 
-      expect(appState.leaveRequests.length, initialLength + 1);
-      final newQuota = appState.leaveQuotas.firstWhere((q) => q.leaveType == LeaveType.annual).pendingDays;
+      expect(dataController.leaveRequests.length, initialLength + 1);
+      final newQuota = dataController.leaveQuotas
+          .firstWhere((q) => q.leaveType == LeaveType.annual)
+          .pendingDays;
       expect(newQuota, initialQuota + 2.0);
     });
 
     test('cancelLeaveRequest updates status and restores quota', () {
       // First submit a request
-      appState.submitLeaveRequest(
+      dataController.submitLeaveRequest(
         leaveType: LeaveType.sick,
         startDate: DateTime.now(),
         endDate: DateTime.now(),
@@ -90,18 +120,24 @@ void main() {
         reason: 'Sick',
       );
 
-      final req = appState.leaveRequests.first;
+      final req = dataController.leaveRequests.first;
       expect(req.status, LeaveStatus.pending);
-      
-      final initialQuota = appState.leaveQuotas.firstWhere((q) => q.leaveType == LeaveType.sick).pendingDays;
+
+      final initialQuota = dataController.leaveQuotas
+          .firstWhere((q) => q.leaveType == LeaveType.sick)
+          .pendingDays;
 
       // Now cancel it
-      appState.cancelLeaveRequest(req.id);
+      dataController.cancelLeaveRequest(req.id);
 
-      final updatedReq = appState.leaveRequests.firstWhere((r) => r.id == req.id);
+      final updatedReq = dataController.leaveRequests.firstWhere(
+        (r) => r.id == req.id,
+      );
       expect(updatedReq.status, LeaveStatus.cancelled);
 
-      final updatedQuota = appState.leaveQuotas.firstWhere((q) => q.leaveType == LeaveType.sick).pendingDays;
+      final updatedQuota = dataController.leaveQuotas
+          .firstWhere((q) => q.leaveType == LeaveType.sick)
+          .pendingDays;
       expect(updatedQuota, initialQuota - 1.0);
     });
 
@@ -118,10 +154,10 @@ void main() {
         status: AppraisalStatus.draft,
       );
 
-      appState.submitAppraisal(appraisal);
+      dataController.submitAppraisal(appraisal);
 
-      expect(appState.currentAppraisal.status, AppraisalStatus.submitted);
-      expect(appState.currentAppraisal.submittedDate, isNotNull);
+      expect(dataController.currentAppraisal.status, AppraisalStatus.submitted);
+      expect(dataController.currentAppraisal.submittedDate, isNotNull);
     });
   });
 }

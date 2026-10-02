@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../state/app_state.dart';
+import 'package:get/get.dart';
+import '../controllers/app_data_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common/ui_glass_container.dart';
@@ -9,15 +10,14 @@ import '../widgets/common/custom_dialogs.dart';
 import '../models/appraisal.dart';
 
 class AppraisalScreen extends StatefulWidget {
-  final AppState state;
-
-  const AppraisalScreen({super.key, required this.state});
+  const AppraisalScreen({super.key});
 
   @override
   State<AppraisalScreen> createState() => _AppraisalScreenState();
 }
 
 class _AppraisalScreenState extends State<AppraisalScreen> {
+  AppDataController get _data => Get.find<AppDataController>();
   late AppraisalRecord _record;
   late TextEditingController _achievementsController;
   late TextEditingController _growthController;
@@ -25,8 +25,10 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
   @override
   void initState() {
     super.initState();
-    _record = widget.state.currentAppraisal;
-    _achievementsController = TextEditingController(text: _record.keyAchievements);
+    _record = _data.currentAppraisal;
+    _achievementsController = TextEditingController(
+      text: _record.keyAchievements,
+    );
     _growthController = TextEditingController(text: _record.areasOfImprovement);
   }
 
@@ -35,7 +37,8 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
     double totalWeightage = 0;
 
     for (var goal in _record.goals) {
-      totalWeightedScore += (goal.selfRating * (goal.weightagePercentage / 100));
+      totalWeightedScore +=
+          (goal.selfRating * (goal.weightagePercentage / 100));
       totalWeightage += (goal.weightagePercentage / 100);
     }
 
@@ -47,7 +50,8 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
       context: context,
       builder: (ctx) => AppConfirmationDialog(
         title: 'Submit Performance Appraisal?',
-        message: 'Your self-assessment will be submitted for review by ${widget.state.currentUser.managerName}.',
+        message:
+            'Your self-assessment will be submitted for review by ${_data.currentUser.managerName}.',
         confirmLabel: 'Submit Appraisal',
         icon: Icons.star_rate_rounded,
         iconColor: AppColors.primary,
@@ -55,7 +59,7 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
           _record.keyAchievements = _achievementsController.text.trim();
           _record.areasOfImprovement = _growthController.text.trim();
           _record.overallSelfRating = _calculatedWeightedScore;
-          widget.state.submitAppraisal(_record);
+          _data.submitAppraisal(_record);
           setState(() {});
         },
       ),
@@ -64,8 +68,10 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.state.isDarkMode;
-    final isSubmitted = _record.status == AppraisalStatus.submitted || _record.status == AppraisalStatus.completed;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isSubmitted =
+        _record.status == AppraisalStatus.submitted ||
+        _record.status == AppraisalStatus.completed;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -87,7 +93,11 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
                         color: AppColors.secondary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.stars_rounded, color: AppColors.secondary, size: 28),
+                      child: const Icon(
+                        Icons.stars_rounded,
+                        color: AppColors.secondary,
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -97,13 +107,26 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
                           Row(
                             children: [
                               Flexible(
-                                child: Text(_record.cycleName, style: AppTypography.titleLarge(isDark), overflow: TextOverflow.ellipsis),
+                                child: Text(
+                                  _record.cycleName,
+                                  style: AppTypography.titleLarge(isDark),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: isSubmitted ? AppColors.success.withValues(alpha: 0.15) : AppColors.warning.withValues(alpha: 0.15),
+                                  color: isSubmitted
+                                      ? AppColors.success.withValues(
+                                          alpha: 0.15,
+                                        )
+                                      : AppColors.warning.withValues(
+                                          alpha: 0.15,
+                                        ),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
@@ -111,14 +134,19 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: isSubmitted ? AppColors.success : AppColors.warning,
+                                    color: isSubmitted
+                                        ? AppColors.success
+                                        : AppColors.warning,
                                   ),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 2),
-                          Text('Review Period: ${_record.period}', style: AppTypography.bodyMedium(isDark)),
+                          Text(
+                            'Review Period: ${_record.period}',
+                            style: AppTypography.bodyMedium(isDark),
+                          ),
                         ],
                       ),
                     ),
@@ -139,21 +167,36 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Overall Self Rating', style: AppTypography.titleMedium(isDark)),
-                          Text('Weighted score across all performance goals', style: AppTypography.caption(isDark)),
+                          Text(
+                            'Overall Self Rating',
+                            style: AppTypography.titleMedium(isDark),
+                          ),
+                          Text(
+                            'Weighted score across all performance goals',
+                            style: AppTypography.caption(isDark),
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 12),
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded, color: AppColors.warning, size: 28),
+                        const Icon(
+                          Icons.star_rounded,
+                          color: AppColors.warning,
+                          size: 28,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           _calculatedWeightedScore.toStringAsFixed(2),
-                          style: AppTypography.displayLarge(isDark).copyWith(fontSize: 26, color: AppColors.primary),
+                          style: AppTypography.displayLarge(
+                            isDark,
+                          ).copyWith(fontSize: 26, color: AppColors.primary),
                         ),
-                        Text(' / 5.0', style: AppTypography.titleMedium(isDark)),
+                        Text(
+                          ' / 5.0',
+                          style: AppTypography.titleMedium(isDark),
+                        ),
                       ],
                     ),
                   ],
@@ -163,7 +206,10 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
               const SizedBox(height: 20),
 
               // Goals List
-              Text('1. Goal & Key Results Evaluation', style: AppTypography.titleLarge(isDark)),
+              Text(
+                '1. Goal & Key Results Evaluation',
+                style: AppTypography.titleLarge(isDark),
+              ),
               const SizedBox(height: 10),
 
               Column(
@@ -180,18 +226,29 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
-                                child: Text(goal.title, style: AppTypography.titleMedium(isDark)),
+                                child: Text(
+                                  goal.title,
+                                  style: AppTypography.titleMedium(isDark),
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.12,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   '${goal.weightagePercentage.toInt()}% Weight',
-                                  style: AppTypography.caption(isDark).copyWith(fontWeight: FontWeight.bold, color: AppColors.primary),
+                                  style: AppTypography.caption(isDark).copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
                                 ),
                               ),
                             ],
@@ -199,7 +256,10 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              Text('Rating: ${goal.selfRating.toStringAsFixed(1)}', style: AppTypography.labelLarge(isDark)),
+                              Text(
+                                'Rating: ${goal.selfRating.toStringAsFixed(1)}',
+                                style: AppTypography.labelLarge(isDark),
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Slider(
@@ -240,18 +300,25 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('2. Key Achievements & Highlights', style: AppTypography.titleMedium(isDark)),
+                    Text(
+                      '2. Key Achievements & Highlights',
+                      style: AppTypography.titleMedium(isDark),
+                    ),
                     const SizedBox(height: 6),
                     AppTextField(
                       controller: _achievementsController,
                       maxLines: 3,
                       enabled: !isSubmitted,
-                      hint: 'Describe major accomplishments during this cycle...',
+                      hint:
+                          'Describe major accomplishments during this cycle...',
                     ),
 
                     const SizedBox(height: 16),
 
-                    Text('3. Areas for Growth & Development', style: AppTypography.titleMedium(isDark)),
+                    Text(
+                      '3. Areas for Growth & Development',
+                      style: AppTypography.titleMedium(isDark),
+                    ),
                     const SizedBox(height: 6),
                     AppTextField(
                       controller: _growthController,
@@ -281,12 +348,18 @@ class _AppraisalScreenState extends State<AppraisalScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              color: AppColors.success,
+                              size: 20,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 'Appraisal submitted on ${_record.submittedDate?.day}/${_record.submittedDate?.month}/${_record.submittedDate?.year}.',
-                                style: AppTypography.labelLarge(isDark).copyWith(color: AppColors.success),
+                                style: AppTypography.labelLarge(
+                                  isDark,
+                                ).copyWith(color: AppColors.success),
                               ),
                             ),
                           ],

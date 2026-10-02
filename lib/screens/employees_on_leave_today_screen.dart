@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../state/app_state.dart';
+import 'package:get/get.dart';
+import '../controllers/app_data_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common/ui_glass_container.dart';
@@ -9,15 +10,16 @@ import '../widgets/common/custom_states.dart';
 import '../widgets/common/app_avatar.dart';
 
 class EmployeesOnLeaveTodayScreen extends StatefulWidget {
-  final AppState state;
-
-  const EmployeesOnLeaveTodayScreen({super.key, required this.state});
+  const EmployeesOnLeaveTodayScreen({super.key});
 
   @override
-  State<EmployeesOnLeaveTodayScreen> createState() => _EmployeesOnLeaveTodayScreenState();
+  State<EmployeesOnLeaveTodayScreen> createState() =>
+      _EmployeesOnLeaveTodayScreenState();
 }
 
-class _EmployeesOnLeaveTodayScreenState extends State<EmployeesOnLeaveTodayScreen> {
+class _EmployeesOnLeaveTodayScreenState
+    extends State<EmployeesOnLeaveTodayScreen> {
+  AppDataController get _data => Get.find<AppDataController>();
   DateTime _selectedDate = DateTime.now();
   String _selectedDept = 'All';
 
@@ -41,14 +43,15 @@ class _EmployeesOnLeaveTodayScreenState extends State<EmployeesOnLeaveTodayScree
 
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.state.isDarkMode;
-    final onLeaveForDate = widget.state.getEmployeesOnLeaveForDate(_selectedDate);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onLeaveForDate = _data.getEmployeesOnLeaveForDate(_selectedDate);
 
     final filtered = onLeaveForDate.where((req) {
       return _selectedDept == 'All' || req.department == _selectedDept;
     }).toList();
 
-    final isToday = _selectedDate.year == DateTime.now().year &&
+    final isToday =
+        _selectedDate.year == DateTime.now().year &&
         _selectedDate.month == DateTime.now().month &&
         _selectedDate.day == DateTime.now().day;
 
@@ -79,8 +82,12 @@ class _EmployeesOnLeaveTodayScreenState extends State<EmployeesOnLeaveTodayScree
                             final picked = await showDatePicker(
                               context: context,
                               initialDate: _selectedDate,
-                              firstDate: DateTime.now().subtract(const Duration(days: 180)),
-                              lastDate: DateTime.now().add(const Duration(days: 180)),
+                              firstDate: DateTime.now().subtract(
+                                const Duration(days: 180),
+                              ),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 180),
+                              ),
                             );
                             if (picked != null) {
                               setState(() => _selectedDate = picked);
@@ -88,15 +95,26 @@ class _EmployeesOnLeaveTodayScreenState extends State<EmployeesOnLeaveTodayScree
                           },
                           borderRadius: BorderRadius.circular(10),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.calendar_month_rounded, size: 18, color: AppColors.primary),
+                                const Icon(
+                                  Icons.calendar_month_rounded,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  isToday ? 'Today (${_formatDate(_selectedDate)})' : _formatDate(_selectedDate),
-                                  style: AppTypography.titleLarge(isDark).copyWith(fontSize: 16),
+                                  isToday
+                                      ? 'Today (${_formatDate(_selectedDate)})'
+                                      : _formatDate(_selectedDate),
+                                  style: AppTypography.titleLarge(
+                                    isDark,
+                                  ).copyWith(fontSize: 16),
                                 ),
                               ],
                             ),
@@ -113,15 +131,18 @@ class _EmployeesOnLeaveTodayScreenState extends State<EmployeesOnLeaveTodayScree
                     const SizedBox(height: 12),
 
                     if (!isToday)
-                      AppButton.text(
-                        label: 'Jump to Today',
-                        onPressed: _today,
-                      ),
+                      AppButton.text(label: 'Jump to Today', onPressed: _today),
 
                     const SizedBox(height: 12),
 
                     AppChipSelect<String>(
-                      options: const ['All', 'Engineering', 'Product & Design', 'Human Resources', 'Marketing'],
+                      options: const [
+                        'All',
+                        'Engineering',
+                        'Product & Design',
+                        'Human Resources',
+                        'Marketing',
+                      ],
                       selectedValue: _selectedDept,
                       labelBuilder: (d) => d,
                       onSelected: (val) => setState(() => _selectedDept = val),
@@ -149,7 +170,8 @@ class _EmployeesOnLeaveTodayScreenState extends State<EmployeesOnLeaveTodayScree
                         child: AppEmptyState(
                           icon: Icons.task_alt_rounded,
                           title: 'No Personnel Away',
-                          message: 'No employees are on leave on ${_formatDate(_selectedDate)}.',
+                          message:
+                              'No employees are on leave on ${_formatDate(_selectedDate)}.',
                         ),
                       )
                     : Column(
@@ -172,25 +194,45 @@ class _EmployeesOnLeaveTodayScreenState extends State<EmployeesOnLeaveTodayScree
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Row(
                                               children: [
                                                 Flexible(
-                                                  child: Text(req.employeeName, style: AppTypography.titleMedium(isDark), overflow: TextOverflow.ellipsis),
+                                                  child: Text(
+                                                    req.employeeName,
+                                                    style:
+                                                        AppTypography.titleMedium(
+                                                          isDark,
+                                                        ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
                                                 ),
                                                 const SizedBox(width: 6),
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 2,
+                                                      ),
                                                   decoration: BoxDecoration(
-                                                    color: AppColors.primary.withValues(alpha: 0.12),
-                                                    borderRadius: BorderRadius.circular(6),
+                                                    color: AppColors.primary
+                                                        .withValues(
+                                                          alpha: 0.12,
+                                                        ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          6,
+                                                        ),
                                                   ),
                                                   child: Text(
                                                     req.leaveType.label,
                                                     style: const TextStyle(
                                                       fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       color: AppColors.primary,
                                                     ),
                                                   ),
@@ -199,7 +241,9 @@ class _EmployeesOnLeaveTodayScreenState extends State<EmployeesOnLeaveTodayScree
                                             ),
                                             Text(
                                               '${req.department} • ${_formatDate(req.startDate)} to ${_formatDate(req.endDate)}',
-                                              style: AppTypography.caption(isDark),
+                                              style: AppTypography.caption(
+                                                isDark,
+                                              ),
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           ],
@@ -211,20 +255,30 @@ class _EmployeesOnLeaveTodayScreenState extends State<EmployeesOnLeaveTodayScree
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                                      color: isDark
+                                          ? AppColors.surfaceDark
+                                          : AppColors.surfaceLight,
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                                        color: isDark
+                                            ? AppColors.borderDark
+                                            : AppColors.borderLight,
                                       ),
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(Icons.handshake_outlined, color: AppColors.secondary, size: 16),
+                                        const Icon(
+                                          Icons.handshake_outlined,
+                                          color: AppColors.secondary,
+                                          size: 16,
+                                        ),
                                         const SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
                                             'Handover: ${req.coveringEmployee ?? "Team Lead"}',
-                                            style: AppTypography.labelLarge(isDark).copyWith(fontSize: 11),
+                                            style: AppTypography.labelLarge(
+                                              isDark,
+                                            ).copyWith(fontSize: 11),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
@@ -235,7 +289,11 @@ class _EmployeesOnLeaveTodayScreenState extends State<EmployeesOnLeaveTodayScree
                                   // Always display leave reason
                                   Text(
                                     'Reason: "${req.reason}"',
-                                    style: AppTypography.bodyMedium(isDark).copyWith(fontStyle: FontStyle.italic, fontSize: 12),
+                                    style: AppTypography.bodyMedium(isDark)
+                                        .copyWith(
+                                          fontStyle: FontStyle.italic,
+                                          fontSize: 12,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -253,7 +311,20 @@ class _EmployeesOnLeaveTodayScreenState extends State<EmployeesOnLeaveTodayScree
 
   String _formatDate(DateTime dt) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${days[dt.weekday - 1]}, ${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 }

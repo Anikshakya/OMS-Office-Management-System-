@@ -1,50 +1,19 @@
-import 'package:flutter/material.dart';
 import '../models/employee.dart';
 import '../models/leave_request.dart';
 import '../models/leave_quota.dart';
 import '../models/appraisal.dart';
 import 'package:get/get.dart';
 import '../controllers/user_controller.dart';
-
 import '../controllers/app_controller.dart';
+import '../models/toast_notification.dart';
 
-class ToastNotification {
-  final String id;
-  final String title;
-  final String message;
-  final ToastType type;
-
-  ToastNotification({
-    required this.id,
-    required this.title,
-    required this.message,
-    required this.type,
-  });
-}
-
-enum ToastType { success, error, warning, info }
-
-class AppState extends ChangeNotifier {
-  ThemeMode get themeMode => Get.find<AppController>().themeMode.value;
-  bool get isDarkMode => Get.find<AppController>().isDarkMode;
-
-  int get selectedPageIndex => Get.find<AppController>().selectedPageIndex.value;
-
-  void toggleTheme() => Get.find<AppController>().toggleTheme();
-  void setThemeMode(ThemeMode mode) => Get.find<AppController>().setThemeMode(mode);
-  void setPageIndex(int index) => Get.find<AppController>().setPageIndex(index);
-
-  // Toast System
-  List<ToastNotification> get toasts => Get.find<AppController>().toasts;
-
+class AppDataController extends GetxController {
   void showToast(String title, String message, ToastType type) =>
       Get.find<AppController>().showToast(title, message, type);
 
-  void dismissToast(String id) => Get.find<AppController>().dismissToast(id);
-
-  // Current User & Data
   Employee get currentUser => Get.find<UserController>().currentUser.value!;
-  set currentUser(Employee val) => Get.find<UserController>().setCurrentUser(val);
+  set currentUser(Employee val) =>
+      Get.find<UserController>().setCurrentUser(val);
 
   late List<Employee> employees;
   late List<LeaveQuota> leaveQuotas;
@@ -58,7 +27,7 @@ class AppState extends ChangeNotifier {
   String leaveHistoryStatusFilter = 'All';
   String leaveHistoryTypeFilter = 'All';
 
-  AppState() {
+  AppDataController() {
     _initMockData();
   }
 
@@ -102,8 +71,12 @@ class AppState extends ChangeNotifier {
       employees[idx] = currentUser;
     }
 
-    showToast('Profile Updated', 'All personal and employment details updated.', ToastType.success);
-    notifyListeners();
+    showToast(
+      'Profile Updated',
+      'All personal and employment details updated.',
+      ToastType.success,
+    );
+    update();
   }
 
   void setCurrentUserFromApi(Map<String, dynamic> userData) {
@@ -117,11 +90,11 @@ class AppState extends ChangeNotifier {
       employees.insert(0, currentUser);
     }
 
-    notifyListeners();
+    update();
   }
 
   void _initMockData() {
-  // Common leave balances template for mock employees
+    // Common leave balances template for mock employees
     const defaultBalances = {
       LeaveType.annual: LeaveBalance(totalAllocated: 20, used: 8),
       LeaveType.sick: LeaveBalance(totalAllocated: 10, used: 2),
@@ -137,7 +110,8 @@ class AppState extends ChangeNotifier {
       department: 'Product & Design',
       email: 'alex.morgan@nexuscorp.com',
       phone: '+1 (555) 234-5678',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
+      avatarUrl:
+          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
       status: 'Active',
       location: 'San Francisco, CA (HQ)',
       joinDate: '15 Mar 2021',
@@ -145,7 +119,8 @@ class AppState extends ChangeNotifier {
       employmentType: 'Full-Time Executive Permanent',
       employeeCode: 'NX-9482',
       dob: '24 Aug 1992',
-      address: '742 Evergreen Terrace, Financial District, San Francisco, CA 94107',
+      address:
+          '742 Evergreen Terrace, Financial District, San Francisco, CA 94107',
       leaveBalances: defaultBalances,
       documents: [
         EmployeeDocument(
@@ -196,13 +171,15 @@ class AppState extends ChangeNotifier {
           company: 'Apple Inc.',
           role: 'Staff Product Architect',
           period: '2021 - 2024',
-          summary: 'Architected next-generation human interface design tokens and multi-platform accessibility systems across iOS ecosystem.',
+          summary:
+              'Architected next-generation human interface design tokens and multi-platform accessibility systems across iOS ecosystem.',
         ),
         WorkExperience(
           company: 'Figma Inc.',
           role: 'Lead UX Engineer & Design Systems Specialist',
           period: '2018 - 2021',
-          summary: 'Pioneered collaborative canvas rendering optimizations and enterprise UI design system architecture.',
+          summary:
+              'Pioneered collaborative canvas rendering optimizations and enterprise UI design system architecture.',
         ),
       ],
     );
@@ -216,7 +193,8 @@ class AppState extends ChangeNotifier {
         department: 'Product & Design',
         email: 'sarah.jenkins@nexuscorp.com',
         phone: '+1 (555) 345-6789',
-        avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
         status: 'On Leave',
         location: 'San Francisco, CA (HQ)',
         joinDate: '10 Jan 2020',
@@ -237,7 +215,8 @@ class AppState extends ChangeNotifier {
         department: 'Engineering',
         email: 'marcus.vance@nexuscorp.com',
         phone: '+1 (555) 456-7890',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
         status: 'On Leave',
         location: 'San Francisco, CA',
         joinDate: '01 Feb 2020',
@@ -258,7 +237,8 @@ class AppState extends ChangeNotifier {
         department: 'Human Resources',
         email: 'sophia.patel@nexuscorp.com',
         phone: '+1 (555) 567-8901',
-        avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300',
         status: 'On Leave',
         location: 'Austin, TX',
         joinDate: '18 Jun 2022',
@@ -279,7 +259,8 @@ class AppState extends ChangeNotifier {
         department: 'Engineering',
         email: 'jordan.miller@nexuscorp.com',
         phone: '+1 (555) 678-9012',
-        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
         status: 'On Leave',
         location: 'Seattle, WA',
         joinDate: '01 Sep 2021',
@@ -300,7 +281,8 @@ class AppState extends ChangeNotifier {
         department: 'Engineering',
         email: 'elena.rostova@nexuscorp.com',
         phone: '+1 (555) 789-0123',
-        avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300',
         status: 'On Leave',
         location: 'Boston, MA',
         joinDate: '14 Nov 2022',
@@ -321,7 +303,8 @@ class AppState extends ChangeNotifier {
         department: 'Engineering',
         email: 'david.kim@nexuscorp.com',
         phone: '+1 (555) 890-1234',
-        avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=300',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=300',
         status: 'On Leave',
         location: 'San Jose, CA',
         joinDate: '05 Apr 2023',
@@ -342,7 +325,8 @@ class AppState extends ChangeNotifier {
         department: 'Marketing',
         email: 'rachel.adams@nexuscorp.com',
         phone: '+1 (555) 901-2345',
-        avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300',
         status: 'On Leave',
         location: 'Chicago, IL',
         joinDate: '20 Jul 2022',
@@ -363,7 +347,8 @@ class AppState extends ChangeNotifier {
         department: 'Engineering',
         email: 'nathaniel.cole@nexuscorp.com',
         phone: '+1 (555) 012-3456',
-        avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=300',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=300',
         status: 'On Leave',
         location: 'Denver, CO',
         joinDate: '12 Dec 2021',
@@ -384,7 +369,8 @@ class AppState extends ChangeNotifier {
         department: 'Marketing',
         email: 'chloe.bennett@nexuscorp.com',
         phone: '+1 (555) 123-4567',
-        avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=300',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=300',
         status: 'On Leave',
         location: 'Los Angeles, CA',
         joinDate: '01 Aug 2023',
@@ -405,7 +391,8 @@ class AppState extends ChangeNotifier {
         department: 'Human Resources',
         email: 'victor.vance@nexuscorp.com',
         phone: '+1 (555) 234-8901',
-        avatarUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=300',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=300',
         status: 'On Leave',
         location: 'Atlanta, GA',
         joinDate: '15 Nov 2022',
@@ -426,7 +413,8 @@ class AppState extends ChangeNotifier {
         department: 'Product & Design',
         email: 'isabella.cruz@nexuscorp.com',
         phone: '+1 (555) 345-9012',
-        avatarUrl: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=300',
+        avatarUrl:
+            'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=300',
         status: 'On Leave',
         location: 'San Francisco, CA (HQ)',
         joinDate: '01 Mar 2022',
@@ -443,11 +431,36 @@ class AppState extends ChangeNotifier {
     ];
 
     leaveQuotas = [
-      const LeaveQuota(leaveType: LeaveType.annual, totalDays: 20, usedDays: 8, pendingDays: 2),
-      const LeaveQuota(leaveType: LeaveType.sick, totalDays: 10, usedDays: 2, pendingDays: 0),
-      const LeaveQuota(leaveType: LeaveType.casual, totalDays: 7, usedDays: 3, pendingDays: 1),
-      const LeaveQuota(leaveType: LeaveType.maternityPaternity, totalDays: 60, usedDays: 0, pendingDays: 0),
-      const LeaveQuota(leaveType: LeaveType.unpaid, totalDays: 15, usedDays: 0, pendingDays: 0),
+      const LeaveQuota(
+        leaveType: LeaveType.annual,
+        totalDays: 20,
+        usedDays: 8,
+        pendingDays: 2,
+      ),
+      const LeaveQuota(
+        leaveType: LeaveType.sick,
+        totalDays: 10,
+        usedDays: 2,
+        pendingDays: 0,
+      ),
+      const LeaveQuota(
+        leaveType: LeaveType.casual,
+        totalDays: 7,
+        usedDays: 3,
+        pendingDays: 1,
+      ),
+      const LeaveQuota(
+        leaveType: LeaveType.maternityPaternity,
+        totalDays: 60,
+        usedDays: 0,
+        pendingDays: 0,
+      ),
+      const LeaveQuota(
+        leaveType: LeaveType.unpaid,
+        totalDays: 15,
+        usedDays: 0,
+        pendingDays: 0,
+      ),
     ];
 
     final now = DateTime.now();
@@ -459,7 +472,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-012',
         employeeId: 'EMP-003',
         employeeName: 'Marcus Vance',
-        employeeAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
         department: 'Engineering',
         leaveType: LeaveType.sick,
         startDate: today.subtract(const Duration(days: 1)),
@@ -474,7 +488,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-011',
         employeeId: 'EMP-004',
         employeeName: 'Sophia Patel',
-        employeeAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300',
         department: 'Human Resources',
         leaveType: LeaveType.annual,
         startDate: today,
@@ -489,7 +504,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-010',
         employeeId: 'EMP-002',
         employeeName: 'Sarah Jenkins',
-        employeeAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
         department: 'Product & Design',
         leaveType: LeaveType.casual,
         startDate: today,
@@ -506,7 +522,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-009',
         employeeId: 'EMP-005',
         employeeName: 'Jordan Miller',
-        employeeAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
         department: 'Engineering',
         leaveType: LeaveType.casual,
         startDate: today,
@@ -521,7 +538,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-008',
         employeeId: 'EMP-006',
         employeeName: 'Elena Rostova',
-        employeeAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300',
         department: 'Engineering',
         leaveType: LeaveType.sick,
         startDate: today,
@@ -538,7 +556,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-007',
         employeeId: 'EMP-007',
         employeeName: 'David Kim',
-        employeeAvatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=300',
         department: 'Engineering',
         leaveType: LeaveType.annual,
         startDate: today.subtract(const Duration(days: 2)),
@@ -553,7 +572,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-006',
         employeeId: 'EMP-008',
         employeeName: 'Rachel Adams',
-        employeeAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300',
         department: 'Marketing',
         leaveType: LeaveType.casual,
         startDate: today,
@@ -568,7 +588,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-005',
         employeeId: 'EMP-009',
         employeeName: 'Nathaniel Cole',
-        employeeAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=300',
         department: 'Engineering',
         leaveType: LeaveType.sick,
         startDate: today.subtract(const Duration(days: 1)),
@@ -583,7 +604,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-004',
         employeeId: 'EMP-010',
         employeeName: 'Chloe Bennett',
-        employeeAvatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=300',
         department: 'Marketing',
         leaveType: LeaveType.casual,
         startDate: today,
@@ -600,7 +622,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-003',
         employeeId: 'EMP-011',
         employeeName: 'Victor Vance',
-        employeeAvatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=300',
         department: 'Human Resources',
         leaveType: LeaveType.maternityPaternity,
         startDate: today.subtract(const Duration(days: 5)),
@@ -615,7 +638,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-002',
         employeeId: 'EMP-012',
         employeeName: 'Isabella Cruz',
-        employeeAvatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=300',
         department: 'Product & Design',
         leaveType: LeaveType.annual,
         startDate: today,
@@ -632,7 +656,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-001',
         employeeId: 'EMP-001',
         employeeName: 'Alex Morgan',
-        employeeAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
         department: 'Product & Design',
         leaveType: LeaveType.casual,
         startDate: today.add(const Duration(days: 3)),
@@ -647,7 +672,8 @@ class AppState extends ChangeNotifier {
         id: 'LV-2026-000',
         employeeId: 'EMP-001',
         employeeName: 'Alex Morgan',
-        employeeAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
+        employeeAvatar:
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
         department: 'Product & Design',
         leaveType: LeaveType.sick,
         startDate: today.subtract(const Duration(days: 12)),
@@ -683,7 +709,8 @@ class AppState extends ChangeNotifier {
           selfComment: 'Hosted bi-weekly syncs with Engineering.',
         ),
       ],
-      keyAchievements: 'Delivered unified enterprise SaaS design system on schedule.',
+      keyAchievements:
+          'Delivered unified enterprise SaaS design system on schedule.',
       areasOfImprovement: 'Expand knowledge on automated UI testing.',
       overallSelfRating: 4.6,
       status: AppraisalStatus.draft,
@@ -701,7 +728,8 @@ class AppState extends ChangeNotifier {
     String? attachmentName,
     String? coveringEmployee,
   }) {
-    final newId = 'LV-2026-${(leaveRequests.length + 1).toString().padLeft(3, '0')}';
+    final newId =
+        'LV-2026-${(leaveRequests.length + 1).toString().padLeft(3, '0')}';
     final request = LeaveRequest(
       id: newId,
       employeeId: currentUser.id,
@@ -740,7 +768,7 @@ class AppState extends ChangeNotifier {
       ToastType.success,
     );
 
-    notifyListeners();
+    update();
   }
 
   void cancelLeaveRequest(String id) {
@@ -750,7 +778,9 @@ class AppState extends ChangeNotifier {
       if (req.status == LeaveStatus.pending) {
         leaveRequests[index] = req.copyWith(status: LeaveStatus.cancelled);
 
-        final qIndex = leaveQuotas.indexWhere((q) => q.leaveType == req.leaveType);
+        final qIndex = leaveQuotas.indexWhere(
+          (q) => q.leaveType == req.leaveType,
+        );
         if (qIndex != -1) {
           final q = leaveQuotas[qIndex];
           leaveQuotas[qIndex] = LeaveQuota(
@@ -761,8 +791,12 @@ class AppState extends ChangeNotifier {
           );
         }
 
-        showToast('Request Cancelled', 'Leave request $id cancelled.', ToastType.info);
-        notifyListeners();
+        showToast(
+          'Request Cancelled',
+          'Leave request $id cancelled.',
+          ToastType.info,
+        );
+        update();
       }
     }
   }
@@ -772,8 +806,12 @@ class AppState extends ChangeNotifier {
     currentAppraisal.status = AppraisalStatus.submitted;
     currentAppraisal.submittedDate = DateTime.now();
 
-    showToast('Appraisal Submitted', 'Appraisal sent to manager.', ToastType.success);
-    notifyListeners();
+    showToast(
+      'Appraisal Submitted',
+      'Appraisal sent to manager.',
+      ToastType.success,
+    );
+    update();
   }
 
   // Filter ONLY user's personal leave history
@@ -782,14 +820,25 @@ class AppState extends ChangeNotifier {
       final isSelf = req.employeeId == currentUser.id;
       if (!isSelf) return false;
 
-      final matchesSearch = req.id.toLowerCase().contains(leaveHistorySearchQuery.toLowerCase()) ||
-          req.reason.toLowerCase().contains(leaveHistorySearchQuery.toLowerCase());
+      final matchesSearch =
+          req.id.toLowerCase().contains(
+            leaveHistorySearchQuery.toLowerCase(),
+          ) ||
+          req.reason.toLowerCase().contains(
+            leaveHistorySearchQuery.toLowerCase(),
+          );
 
-      final matchesStatus = leaveHistoryStatusFilter == 'All' ||
-          req.status.label.toLowerCase().contains(leaveHistoryStatusFilter.toLowerCase());
+      final matchesStatus =
+          leaveHistoryStatusFilter == 'All' ||
+          req.status.label.toLowerCase().contains(
+            leaveHistoryStatusFilter.toLowerCase(),
+          );
 
-      final matchesType = leaveHistoryTypeFilter == 'All' ||
-          req.leaveType.label.toLowerCase().contains(leaveHistoryTypeFilter.toLowerCase());
+      final matchesType =
+          leaveHistoryTypeFilter == 'All' ||
+          req.leaveType.label.toLowerCase().contains(
+            leaveHistoryTypeFilter.toLowerCase(),
+          );
 
       return matchesSearch && matchesStatus && matchesType;
     }).toList();
@@ -800,21 +849,34 @@ class AppState extends ChangeNotifier {
 
     return leaveRequests.where((req) {
       if (req.status != LeaveStatus.approved) return false;
-      final start = DateTime(req.startDate.year, req.startDate.month, req.startDate.day);
-      final end = DateTime(req.endDate.year, req.endDate.month, req.endDate.day);
+      final start = DateTime(
+        req.startDate.year,
+        req.startDate.month,
+        req.startDate.day,
+      );
+      final end = DateTime(
+        req.endDate.year,
+        req.endDate.month,
+        req.endDate.day,
+      );
       return (target.isAfter(start.subtract(const Duration(days: 1))) &&
-              target.isBefore(end.add(const Duration(days: 1))));
+          target.isBefore(end.add(const Duration(days: 1))));
     }).toList();
   }
 
-  List<LeaveRequest> get employeesOnLeaveToday => getEmployeesOnLeaveForDate(DateTime.now());
+  List<LeaveRequest> get employeesOnLeaveToday =>
+      getEmployeesOnLeaveForDate(DateTime.now());
 
   List<Employee> get filteredEmployees {
     return employees.where((emp) {
-      final matchesSearch = emp.name.toLowerCase().contains(employeeSearchQuery.toLowerCase()) ||
-          emp.designation.toLowerCase().contains(employeeSearchQuery.toLowerCase()) ||
+      final matchesSearch =
+          emp.name.toLowerCase().contains(employeeSearchQuery.toLowerCase()) ||
+          emp.designation.toLowerCase().contains(
+            employeeSearchQuery.toLowerCase(),
+          ) ||
           emp.email.toLowerCase().contains(employeeSearchQuery.toLowerCase());
-      final matchesDept = employeeDeptFilter == 'All' || emp.department == employeeDeptFilter;
+      final matchesDept =
+          employeeDeptFilter == 'All' || emp.department == employeeDeptFilter;
       return matchesSearch && matchesDept;
     }).toList();
   }

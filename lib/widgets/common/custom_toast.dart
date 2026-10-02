@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../state/app_state.dart';
+import '../../models/toast_notification.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import 'ui_glass_container.dart';
@@ -63,10 +63,7 @@ class ToastOverlayRenderer extends StatelessWidget {
                 builder: (context, value, child) {
                   return Transform.translate(
                     offset: Offset(0, -24 * (1 - value)),
-                    child: Opacity(
-                      opacity: value,
-                      child: child,
-                    ),
+                    child: Opacity(opacity: value, child: child),
                   );
                 },
                 child: GlassContainer(
@@ -92,16 +89,16 @@ class ToastOverlayRenderer extends StatelessWidget {
                           children: [
                             Text(
                               toast.title,
-                              style: AppTypography.labelLarge(isDark).copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: AppTypography.labelLarge(
+                                isDark,
+                              ).copyWith(fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(height: 1),
                             Text(
                               toast.message,
-                              style: AppTypography.caption(isDark).copyWith(
-                                fontSize: 11,
-                              ),
+                              style: AppTypography.caption(
+                                isDark,
+                              ).copyWith(fontSize: 11),
                             ),
                           ],
                         ),
