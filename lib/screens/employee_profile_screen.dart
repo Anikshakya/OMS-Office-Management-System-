@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:oms/controllers/auth_controller.dart';
-import '../controllers/app_data_controller.dart';
+
 import '../controllers/app_controller.dart';
+import '../controllers/app_data_controller.dart';
 import '../controllers/theme_controller.dart';
+import '../models/employee.dart';
 import '../models/toast_notification.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../widgets/common/ui_glass_container.dart';
+import '../widgets/common/app_avatar.dart';
 import '../widgets/common/custom_buttons.dart';
 import '../widgets/common/custom_tabs.dart';
-import '../widgets/common/app_avatar.dart';
+import '../widgets/common/ui_glass_container.dart';
 import '../widgets/profile/edit_profile_dialog.dart';
-import '../models/employee.dart';
 
 class EmployeeProfileScreen extends StatefulWidget {
   final Employee? employee;
@@ -32,6 +33,19 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
 
   void _showEditProfileModal() {
     showDialog(context: context, builder: (ctx) => const EditProfileDialog());
+  }
+
+  void _showLogoutConfirmation() {
+    final authController = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : Get.put(AuthController());
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) =>
+          _LogoutConfirmationDialog(authController: authController),
+    );
   }
 
   @override
@@ -71,26 +85,6 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                 ],
                 selectedIndex: _activeTab,
                 onTabChanged: (index) => setState(() => _activeTab = index),
-              ),
-
-              const SizedBox(height: 16),
-
-              ElevatedButton.icon(
-                onPressed: () {
-                  final authCon = Get.put(AuthController());
-                  authCon.logout();
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text("Logout"),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
               ),
 
               const SizedBox(height: 16),
@@ -237,34 +231,30 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                 const Divider(height: 1),
                 const SizedBox(height: 12),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.verified_user_rounded,
-                          size: 16,
-                          color: isDark
-                              ? AppColors.textMutedDark
-                              : AppColors.textMutedLight,
+                    Expanded(
+                      child: AppButton.primary(
+                        label: 'Edit Profile',
+                        icon: Icons.edit_outlined,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          emp.employmentType,
-                          style: AppTypography.caption(
-                            isDark,
-                          ).copyWith(fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                    AppButton.primary(
-                      label: 'Edit Profile',
-                      icon: Icons.edit_outlined,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
+                        onPressed: _showEditProfileModal,
                       ),
-                      onPressed: _showEditProfileModal,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: AppButton.outlined(
+                        label: 'Log Out',
+                        icon: Icons.logout_rounded,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        onPressed: _showLogoutConfirmation,
+                      ),
                     ),
                   ],
                 ),
@@ -671,6 +661,89 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
           }).toList(),
         );
       },
+    );
+  }
+}
+
+class _LogoutConfirmationDialog extends StatelessWidget {
+  final AuthController authController;
+
+  const _LogoutConfirmationDialog({required this.authController});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: GlassContainer(
+          borderRadius: 20,
+          padding: const EdgeInsets.all(24),
+          child: Obx(() {
+            final isLoading = authController.isLogoutLoading.value;
+
+            return PopScope(
+              canPop: !isLoading,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.logout_rounded,
+                      size: 28,
+                      color: AppColors.error,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Log Out?',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.titleLarge(isDark),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Are you sure you want to log out of your account?',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.bodyMedium(isDark),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppButton.outlined(
+                          label: 'Cancel',
+                          onPressed: isLoading
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: AppButton.primary(
+                          label: 'Log Out',
+                          icon: Icons.logout_rounded,
+                          isLoading: isLoading,
+                          onPressed: isLoading
+                              ? null
+                              : () => authController.logout(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+        ),
+      ),
     );
   }
 }
