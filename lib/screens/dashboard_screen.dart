@@ -95,7 +95,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final user = _data.currentUser;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -106,8 +106,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           // Employees On Leave Section taking all remaining screen height
           Expanded(child: _buildOnLeaveSection(isDark)),
-
-          const SizedBox(height: 75),
         ],
       ),
     );
@@ -368,25 +366,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // Swipeable Container
         Expanded(
-          child: Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                width: 1,
-              ),
-              boxShadow: AppColors.softShadow(isDark),
-            ),
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: _onPageChanged,
-              itemBuilder: (context, index) {
-                final date = _getDateForPage(index);
-                return _buildLeaveCardContent(date, isDark);
-              },
-            ),
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            itemBuilder: (context, index) {
+              final date = _getDateForPage(index);
+              return _buildLeaveCardContent(date, isDark);
+            },
           ),
         ),
       ],
@@ -440,7 +426,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return ListView.separated(
       itemCount: onLeaveList.length,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.only(bottom: 86, left: 4, right: 4),
       separatorBuilder: (context, index) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final req = onLeaveList[index];
