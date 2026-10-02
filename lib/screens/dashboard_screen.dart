@@ -127,10 +127,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     dynamic user,
     Employee emp,
   ) {
+    final primaryColor = isDark ? AppColors.primaryDark : AppColors.primary;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
           colors: isDark
               ? [
@@ -144,111 +146,201 @@ class _DashboardScreenState extends State<DashboardScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.22),
+            color: primaryColor.withValues(
+              alpha: isDark ? 0.35 : 0.2,
+            ),
             blurRadius: 16,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isNarrow = constraints.maxWidth < 480;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Stack(
-                    children: [
-                      AppAvatar(
-                        url: emp.avatarUrl,
-                        name: emp.name,
-                        radius: isNarrow ? 28 : 36,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 360;
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ─────────────────────────────────────────────
+                // Profile Row
+                // ─────────────────────────────────────────────
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        AppAvatar(
+                          url: emp.avatarUrl,
+                          name: emp.name,
+                          radius: isNarrow ? 24 : 28,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: AppColors.success,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.surfaceDark
+                                    : Colors.white,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // User information
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hello, ${user.name}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
+                              height: 1.2,
+                            ),
+                          ),
+
+                          if (user.designation != null &&
+                              user.designation.toString().isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              user.designation.toString(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white.withValues(
+                                  alpha: 0.85,
+                                ),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w400,
+                                height: 1.2,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
+                    ),
+
+                    // Department
+                    if (user.department != null &&
+                        user.department.toString().isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: 130,
+                        ),
                         child: Container(
-                          width: 14,
-                          height: 14,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: AppColors.success,
-                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(
+                              alpha: 0.15,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: isDark
-                                  ? AppColors.surfaceDark
-                                  : Colors.white,
-                              width: 2,
+                              color: Colors.white.withValues(
+                                alpha: 0.08,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            user.department
+                                .toString()
+                                .toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.4,
                             ),
                           ),
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Hello, ${user.name}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${user.designation} • ${user.department}',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.85),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: EdgeInsets.only(top: 16.0),
-                child: Row(
+                  ],
+                ),
+
+                const SizedBox(height: 14),
+
+                // ─────────────────────────────────────────────
+                // Dashboard / Appraisal Row
+                // ─────────────────────────────────────────────
+                Row(
                   children: [
+                    // Dashboard icon bubble
+                    const Icon(
+                      Icons.dashboard_rounded,
+                      color: Colors.white,
+                      size: 19,
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    // Dashboard title
                     Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _appController.setPageIndex(3),
-                        icon: const Icon(
-                          Icons.star_outline_rounded,
-                          size: 18,
-                          color: AppColors.primaryDark,
-                        ),
-                        label: const Text(
-                          'Appraisal',
-                          style: TextStyle(color: AppColors.primaryDark),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppColors.primaryDark,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                      child: Text(
+                        'Have a Good Day!',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.titleMedium(
+                          isDark,
+                        ).copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
+
+                    const SizedBox(width: 10),
+
+                    // Appraisal button
+                    AppButton.secondary(
+                      label: 'View Appraisal',
+                      icon: Icons.star_outline_rounded,
+                      onPressed: () {
+                        _appController.setPageIndex(3);
+                      },
+                      isFullWidth: false,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      borderRadius: 10,
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.primaryDark,
+                    ),
                   ],
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

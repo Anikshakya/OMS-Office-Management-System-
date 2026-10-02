@@ -14,6 +14,8 @@ class AppButton extends StatefulWidget {
   final bool isFullWidth;
   final EdgeInsetsGeometry? padding;
   final double borderRadius;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
 
   const AppButton({
     super.key,
@@ -25,6 +27,8 @@ class AppButton extends StatefulWidget {
     this.isFullWidth = false,
     this.padding,
     this.borderRadius = 12.0,
+    this.backgroundColor,
+    this.foregroundColor,
   });
 
   const AppButton.primary({
@@ -36,6 +40,8 @@ class AppButton extends StatefulWidget {
     this.isFullWidth = false,
     this.padding,
     this.borderRadius = 12.0,
+    this.backgroundColor,
+    this.foregroundColor,
   }) : variant = AppButtonVariant.primary;
 
   const AppButton.secondary({
@@ -47,6 +53,8 @@ class AppButton extends StatefulWidget {
     this.isFullWidth = false,
     this.padding,
     this.borderRadius = 12.0,
+    this.backgroundColor,
+    this.foregroundColor,
   }) : variant = AppButtonVariant.secondary;
 
   const AppButton.outlined({
@@ -58,6 +66,8 @@ class AppButton extends StatefulWidget {
     this.isFullWidth = false,
     this.padding,
     this.borderRadius = 12.0,
+    this.backgroundColor,
+    this.foregroundColor,
   }) : variant = AppButtonVariant.outlined;
 
   const AppButton.text({
@@ -69,6 +79,8 @@ class AppButton extends StatefulWidget {
     this.isFullWidth = false,
     this.padding,
     this.borderRadius = 12.0,
+    this.backgroundColor,
+    this.foregroundColor,
   }) : variant = AppButtonVariant.text;
 
   @override
@@ -99,31 +111,44 @@ class _AppButtonState extends State<AppButton> {
         bg = isDisabled
             ? (isDark ? AppColors.borderDark : AppColors.borderLight)
             : (isDark
-                ? (_isHovered ? AppColors.cardDark : AppColors.surfaceDark)
-                : (_isHovered ? AppColors.borderLight : AppColors.primaryContainer));
+                  ? (_isHovered ? AppColors.cardDark : AppColors.surfaceDark)
+                  : (_isHovered
+                        ? AppColors.borderLight
+                        : AppColors.primaryContainer));
         fg = isDark ? AppColors.textPrimaryDark : AppColors.primary;
         break;
       case AppButtonVariant.outlined:
         bg = _isHovered
-            ? (isDark ? AppColors.borderDark.withValues(alpha: 0.5) : AppColors.primaryContainer.withValues(alpha: 0.4))
+            ? (isDark
+                  ? AppColors.borderDark.withValues(alpha: 0.5)
+                  : AppColors.primaryContainer.withValues(alpha: 0.4))
             : Colors.transparent;
         fg = isDark ? AppColors.textPrimaryDark : AppColors.primary;
         border = BorderSide(
           color: isDisabled
               ? (isDark ? AppColors.borderDark : AppColors.borderLight)
-              : (_isHovered ? AppColors.primary : (isDark ? AppColors.borderDark : AppColors.borderLight)),
+              : (_isHovered
+                    ? AppColors.primary
+                    : (isDark ? AppColors.borderDark : AppColors.borderLight)),
           width: 1.2,
         );
         break;
       case AppButtonVariant.text:
         bg = _isHovered
-            ? (isDark ? AppColors.borderDark.withValues(alpha: 0.3) : AppColors.primaryContainer.withValues(alpha: 0.3))
+            ? (isDark
+                  ? AppColors.borderDark.withValues(alpha: 0.3)
+                  : AppColors.primaryContainer.withValues(alpha: 0.3))
             : Colors.transparent;
         fg = isDark ? AppColors.textPrimaryDark : AppColors.primary;
         break;
     }
 
-    final defaultPadding = widget.padding ??
+    if (!isDisabled) {
+      bg = widget.backgroundColor ?? bg;
+    }
+    fg = widget.foregroundColor ?? fg;
+    final defaultPadding =
+        widget.padding ??
         const EdgeInsets.symmetric(horizontal: 16, vertical: 11);
 
     return MouseRegion(
@@ -143,7 +168,9 @@ class _AppButtonState extends State<AppButton> {
             decoration: BoxDecoration(
               color: bg,
               borderRadius: BorderRadius.circular(widget.borderRadius),
-              border: border != BorderSide.none ? Border.all(color: border.color, width: border.width) : null,
+              border: border != BorderSide.none
+                  ? Border.all(color: border.color, width: border.width)
+                  : null,
             ),
             child: Material(
               color: Colors.transparent,
@@ -153,7 +180,9 @@ class _AppButtonState extends State<AppButton> {
                 child: Padding(
                   padding: defaultPadding,
                   child: Row(
-                    mainAxisSize: widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+                    mainAxisSize: widget.isFullWidth
+                        ? MainAxisSize.max
+                        : MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (widget.isLoading) ...[
@@ -173,10 +202,9 @@ class _AppButtonState extends State<AppButton> {
                       Flexible(
                         child: Text(
                           widget.label,
-                          style: AppTypography.labelLarge(isDark).copyWith(
-                            color: fg,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AppTypography.labelLarge(
+                            isDark,
+                          ).copyWith(color: fg, fontWeight: FontWeight.w600),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -223,18 +251,22 @@ class _AppIconButtonState extends State<AppIconButton> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bg = widget.color ??
+    final bg =
+        widget.color ??
         (_isHovered
             ? (isDark ? AppColors.cardDark : AppColors.borderLight)
             : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight));
 
-    final iconColor = widget.iconColor ??
+    final iconColor =
+        widget.iconColor ??
         (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight);
 
     final button = MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      cursor: widget.onPressed != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      cursor: widget.onPressed != null
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         width: widget.size,
@@ -262,6 +294,8 @@ class _AppIconButtonState extends State<AppIconButton> {
       ),
     );
 
-    return widget.tooltip != null ? Tooltip(message: widget.tooltip!, child: button) : button;
+    return widget.tooltip != null
+        ? Tooltip(message: widget.tooltip!, child: button)
+        : button;
   }
 }

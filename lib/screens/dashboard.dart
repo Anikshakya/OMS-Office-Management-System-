@@ -302,7 +302,7 @@ class _DashboardState extends State<Dashboard> {
                         Icon(Icons.add_rounded, color: Colors.white, size: 18),
                         SizedBox(width: 4),
                         Text(
-                          'New Leave',
+                          'Apply Leave',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
