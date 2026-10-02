@@ -95,12 +95,9 @@ class _DashboardState extends State<Dashboard> {
         // ---------------------------------------------------------------------
         // BODY
         // ---------------------------------------------------------------------
-        body: Padding(
-          padding: const EdgeInsets.only(bottom: 20), // Clearance for floating nav bar
-          child: IndexedStack(
-            index: stackIndex,
-            children: _pages,
-          ),
+        body: IndexedStack(
+          index: stackIndex,
+          children: _pages,
         ),
 
         // ---------------------------------------------------------------------
@@ -122,7 +119,7 @@ class _DashboardState extends State<Dashboard> {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 26),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
         child: Align(
           alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
