@@ -9,11 +9,9 @@ class LeaveController extends GetxController {
   final RxList<LeaveRequest> leaveHistory = <LeaveRequest>[].obs;
   final RxBool isLoading = false.obs;
 
-
-
   Future<void> fetchLeaveHistory() async {
     final user = Get.find<UserController>().currentUser.value;
-    if (user == null || user.id == null) return;
+    if (user == null) return;
 
     isLoading.value = true;
     try {

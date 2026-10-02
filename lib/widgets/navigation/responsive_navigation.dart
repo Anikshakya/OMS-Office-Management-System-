@@ -80,24 +80,21 @@ class ResponsiveNavigationShell extends StatelessWidget {
     final isDesktop = screenWidth >= 950;
 
     return Scaffold(
+      extendBody: true,
+      backgroundColor: Colors.transparent,
       bottomNavigationBar: isDesktop ? null : _buildBottomNavigationBar(),
       body: SafeArea(
-        bottom: Platform.isIOS ? false : true,
-        child: Stack(
+        bottom: false,
+        child: Row(
           children: [
-            // Full height content container scrolling behind floating bar
-            Row(
-              children: [
-                if (isDesktop) _buildSidebar(context),
-                Expanded(
-                  child: Column(
-                    children: [
-                      _buildTopAppBar(context, isDesktop: isDesktop),
-                      Expanded(child: ClipRect(child: body)),
-                    ],
-                  ),
-                ),
-              ],
+            if (isDesktop) _buildSidebar(context),
+            Expanded(
+              child: Column(
+                children: [
+                  _buildTopAppBar(context, isDesktop: isDesktop),
+                  Expanded(child: ClipRect(child: body)),
+                ],
+              ),
             ),
           ],
         ),
@@ -246,46 +243,99 @@ class ResponsiveNavigationShell extends StatelessWidget {
         .map((index) => kNavigationItems[index])
         .toList();
 
-    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    // Dark mode uses a lifted card color so the bar separates from the page
+    final bgColor = isDark ? AppColors.cardDark : AppColors.surfaceLight;
+    final unselectedColor = isDark
+        ? AppColors.textMutedDark
+        : AppColors.textMutedLight;
 
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
         child: Container(
+          height: 68,
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: isDark ? AppColors.borderDark : AppColors.borderLight,
+              width: 1,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.4 : 0.12),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                color: Colors.black.withValues(alpha: isDark ? 0.55 : 0.18),
+                blurRadius: 28,
+                spreadRadius: 1,
+                offset: const Offset(0, 10),
+              ),
+              BoxShadow(
+                color: AppColors.primary.withValues(
+                  alpha: isDark ? 0.10 : 0.08,
+                ),
+                blurRadius: 18,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: BottomNavigationBar(
-              currentIndex: selectedIndex < 0 ? 0 : selectedIndex,
-              onTap: (index) => state.setPageIndex(bottomNavPageIndices[index]),
-              type: BottomNavigationBarType.fixed,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              selectedItemColor: AppColors.primary,
-              unselectedItemColor: isDark
-                  ? AppColors.textMutedDark
-                  : AppColors.textMutedLight,
-              items: items
-                  .map(
-                    (item) => BottomNavigationBarItem(
-                      icon: Icon(item.icon),
-                      activeIcon: Icon(item.activeIcon),
-                      label: item.title,
+          child: Row(
+            children: List.generate(items.length, (i) {
+              final item = items[i];
+              final isSelected = i == selectedIndex;
+
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 8,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(22),
+                      onTap: () => state.setPageIndex(bottomNavPageIndices[i]),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary.withValues(alpha: 0.14)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isSelected ? item.activeIcon : item.icon,
+                              size: 24,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : unselectedColor,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : unselectedColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  )
-                  .toList(),
-            ),
+                  ),
+                ),
+              );
+            }),
           ),
         ),
       ),
