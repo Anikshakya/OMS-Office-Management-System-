@@ -14,14 +14,14 @@ import 'package:oms/screens/leave_history_screen.dart';
 import 'package:oms/theme/app_colors.dart';
 import 'package:oms/widgets/common/custom_buttons.dart';
 
-class AuthenticatedHome extends StatefulWidget {
-  const AuthenticatedHome({super.key});
+class Dashboard extends StatefulWidget {
+  const Dashboard({super.key});
 
   @override
-  State<AuthenticatedHome> createState() => _AuthenticatedHomeState();
+  State<Dashboard> createState() => _DashboardState();
 }
 
-class _AuthenticatedHomeState extends State<AuthenticatedHome> {
+class _DashboardState extends State<Dashboard> {
   // ---------------------------------------------------------------------------
   // Navigation
   // ---------------------------------------------------------------------------

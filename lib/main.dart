@@ -66,7 +66,7 @@ class _OmsAppState extends State<OmsApp> {
           GetPage(name: AppRoutes.login, page: () => const LoginPage()),
           GetPage(
             name: AppRoutes.dashboard,
-            page: () => const AuthenticatedHome(),
+            page: () => const Dashboard(),
           ),
           GetPage(
             name: AppRoutes.applyLeave,
