@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:oms/controllers/user_controller.dart';
 import 'package:oms/controllers/app_controller.dart';
 import 'package:oms/controllers/theme_controller.dart';
+import 'package:oms/models/toast_notification.dart';
 import 'package:oms/services/theme_service.dart';
 import 'package:flutter/services.dart';
 
@@ -24,12 +25,12 @@ void main() {
   ) async {
     const MethodChannel(
       'plugins.flutter.io/path_provider',
-    // ignore: deprecated_member_use
+      // ignore: deprecated_member_use
     ).setMockMethodCallHandler((MethodCall methodCall) async {
       return '.';
     });
     Get.put(UserController());
-    Get.put(AppController());
+    final appController = Get.put(AppController());
     final dataController = Get.put(AppDataController());
     Get.put(ThemeController(themeService: _MemoryThemeService()));
     addTearDown(Get.reset);
@@ -56,6 +57,7 @@ void main() {
 
     // Wait for animations
     await tester.pumpAndSettle();
+    expect(Get.key.currentState, isNotNull);
 
     // Verify hero banner
     expect(
@@ -106,5 +108,14 @@ void main() {
 
     await tester.tap(nextButton);
     await tester.pumpAndSettle();
+
+    appController.showToast('Dismissible', 'Swipe to dismiss', ToastType.info);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Swipe to dismiss'), findsOneWidget);
+
+    await tester.drag(find.text('Swipe to dismiss'), const Offset(400, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Swipe to dismiss'), findsNothing);
   });
 }

@@ -184,180 +184,186 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     final usedDays = selectedBalance?.used ?? 0;
     final remainingDays = selectedBalance?.remaining ?? 0;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 700),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Banner displaying selected category stats
-                GlassContainer(
-                  borderRadius: 16,
-                  padding: const EdgeInsets.all(16),
-                  child: Builder(
-                    builder: (context) {
-                      // Fetch color directly from the enum
-                      final leaveTypeColor = _selectedType.color;
-
-                      final double totalAllocated = (usedDays + remainingDays)
-                          .toDouble();
-                      final double progress = totalAllocated > 0
-                          ? (usedDays / totalAllocated).clamp(0.0, 1.0)
-                          : 0.0;
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Top Header: Leave Name + Remaining Badge
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  '${_selectedType.label} Leave',
-                                  style: AppTypography.titleLarge(isDark)
-                                      .copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: -0.3,
-                                      ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: leaveTypeColor.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: leaveTypeColor.withValues(
-                                      alpha: 0.25,
-                                    ),
-                                    width: 1,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Apply Leave'),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 700),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Banner displaying selected category stats
+                  GlassContainer(
+                    borderRadius: 16,
+                    padding: const EdgeInsets.all(16),
+                    child: Builder(
+                      builder: (context) {
+                        // Fetch color directly from the enum
+                        final leaveTypeColor = _selectedType.color;
+      
+                        final double totalAllocated = (usedDays + remainingDays)
+                            .toDouble();
+                        final double progress = totalAllocated > 0
+                            ? (usedDays / totalAllocated).clamp(0.0, 1.0)
+                            : 0.0;
+      
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Top Header: Leave Name + Remaining Badge
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${_selectedType.label} Leave',
+                                    style: AppTypography.titleLarge(isDark)
+                                        .copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: -0.3,
+                                        ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                child: Text(
-                                  '$remainingDays ${remainingDays == 1 ? 'day' : 'days'} left',
-                                  style: AppTypography.labelMedium(isDark)
-                                      .copyWith(
-                                        color: leaveTypeColor,
-                                        fontWeight: FontWeight.w700,
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: leaveTypeColor.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: leaveTypeColor.withValues(
+                                        alpha: 0.25,
                                       ),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '$remainingDays ${remainingDays == 1 ? 'day' : 'days'} left',
+                                    style: AppTypography.labelMedium(isDark)
+                                        .copyWith(
+                                          color: leaveTypeColor,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+      
+                            // Graphical Linear Progress Bar matching LeaveType Color
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 8,
+                                backgroundColor: isDark
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : Colors.black.withValues(alpha: 0.06),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  leaveTypeColor,
                                 ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Graphical Linear Progress Bar matching LeaveType Color
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              minHeight: 8,
-                              backgroundColor: isDark
-                                  ? Colors.white.withValues(alpha: 0.08)
-                                  : Colors.black.withValues(alpha: 0.06),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                leaveTypeColor,
-                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Sub-metrics: Used vs Total Quota
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Used: $usedDays ${usedDays == 1 ? 'day' : 'days'}',
-                                style: AppTypography.bodyMedium(isDark)
-                                    .copyWith(
-                                      color: isDark
-                                          ? Colors.white60
-                                          : Colors.black54,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                              ),
-                              Text(
-                                'Total: ${totalAllocated.toInt()} ${totalAllocated == 1 ? 'day' : 'days'}',
-                                style: AppTypography.bodyMedium(isDark)
-                                    .copyWith(
-                                      color: isDark
-                                          ? Colors.white60
-                                          : Colors.black54,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      );
-                    },
+                            const SizedBox(height: 8),
+      
+                            // Sub-metrics: Used vs Total Quota
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Used: $usedDays ${usedDays == 1 ? 'day' : 'days'}',
+                                  style: AppTypography.bodyMedium(isDark)
+                                      .copyWith(
+                                        color: isDark
+                                            ? Colors.white60
+                                            : Colors.black54,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                ),
+                                Text(
+                                  'Total: ${totalAllocated.toInt()} ${totalAllocated == 1 ? 'day' : 'days'}',
+                                  style: AppTypography.bodyMedium(isDark)
+                                      .copyWith(
+                                        color: isDark
+                                            ? Colors.white60
+                                            : Colors.black54,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // 1. Leave Category Selection
-                _buildSectionLabel('1. Leave Category', isDark),
-                const SizedBox(height: 8),
-                _buildCategoryChips(isDark),
-
-                const SizedBox(height: 16),
-
-                // 2. Date Range & Duration Card
-                _buildSectionLabel('2. Date Range & Duration Type', isDark),
-                const SizedBox(height: 8),
-                _buildDateCard(isDark),
-
-                const SizedBox(height: 16),
-
-                // 3. Supervisor & Handover Card
-                _buildSectionLabel('3. Supervisor & Handover Details', isDark),
-                const SizedBox(height: 8),
-                _buildSupervisorAndHandoverCard(isDark),
-
-                const SizedBox(height: 16),
-
-                // 4. Reason / Cause Card
-                _buildSectionLabel('4. Reason for Absence', isDark),
-                const SizedBox(height: 8),
-                GlassContainer(
-                  borderRadius: 16,
-                  padding: const EdgeInsets.all(16),
-                  child: AppTextField(
-                    controller: _reasonController,
-                    label: 'Leave Reason / Justification',
-                    hint: 'Describe why you are requesting leave...',
-                    maxLines: 3,
+      
+                  const SizedBox(height: 16),
+      
+                  // 1. Leave Category Selection
+                  _buildSectionLabel('1. Leave Category', isDark),
+                  const SizedBox(height: 8),
+                  _buildCategoryChips(isDark),
+      
+                  const SizedBox(height: 16),
+      
+                  // 2. Date Range & Duration Card
+                  _buildSectionLabel('2. Date Range & Duration Type', isDark),
+                  const SizedBox(height: 8),
+                  _buildDateCard(isDark),
+      
+                  const SizedBox(height: 16),
+      
+                  // 3. Supervisor & Handover Card
+                  _buildSectionLabel('3. Supervisor & Handover Details', isDark),
+                  const SizedBox(height: 8),
+                  _buildSupervisorAndHandoverCard(isDark),
+      
+                  const SizedBox(height: 16),
+      
+                  // 4. Reason / Cause Card
+                  _buildSectionLabel('4. Reason for Absence', isDark),
+                  const SizedBox(height: 8),
+                  GlassContainer(
+                    borderRadius: 16,
+                    padding: const EdgeInsets.all(16),
+                    child: AppTextField(
+                      controller: _reasonController,
+                      label: 'Leave Reason / Justification',
+                      hint: 'Describe why you are requesting leave...',
+                      maxLines: 3,
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Submit Button
-                AppButton.primary(
-                  label: _isSubmitting
-                      ? 'Submitting Request...'
-                      : 'Submit ${_durationLabel.split("(").first.trim()} Leave Request',
-                  isFullWidth: true,
-                  isLoading: _isSubmitting,
-                  icon: Icons.send_rounded,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  borderRadius: 16,
-                  onPressed: _handleSubmit,
-                ),
-              ],
+      
+                  const SizedBox(height: 24),
+      
+                  // Submit Button
+                  AppButton.primary(
+                    label: _isSubmitting
+                        ? 'Submitting Request...'
+                        : 'Submit ${_durationLabel.split("(").first.trim()} Leave Request',
+                    isFullWidth: true,
+                    isLoading: _isSubmitting,
+                    icon: Icons.send_rounded,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    borderRadius: 16,
+                    onPressed: _handleSubmit,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
