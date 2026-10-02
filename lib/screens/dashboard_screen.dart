@@ -490,43 +490,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final onLeaveList = _data.getEmployeesOnLeaveForDate(date);
 
     if (onLeaveList.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.verified_user_rounded,
-                  color: AppColors.success,
-                  size: 32,
+      return Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 32,
+          vertical: 80,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.045),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.06),
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Full Attendance',
-                style: AppTypography.titleMedium(
-                  isDark,
-                ).copyWith(fontWeight: FontWeight.bold),
+              child: Icon(
+                Icons.event_available_rounded,
+                size: 24,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.55)
+                    : Colors.black.withValues(alpha: 0.45),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'All personnel are active and scheduled to be present on ${_formatDateShort(date)}.',
+            ),
+      
+            const SizedBox(height: 14),
+      
+            Text(
+              'No Leave Scheduled',
+              textAlign: TextAlign.center,
+              style: AppTypography.titleMedium(isDark).copyWith(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.1,
+              ),
+            ),
+      
+            const SizedBox(height: 5),
+      
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: 320,
+              ),
+              child: Text(
+                'No employees are scheduled to be on leave on '
+                '${_formatDateShort(date)}.',
                 textAlign: TextAlign.center,
                 style: AppTypography.caption(isDark).copyWith(
+                  fontSize: 12,
+                  height: 1.4,
                   color: isDark
                       ? AppColors.textMutedDark
                       : AppColors.textMutedLight,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
