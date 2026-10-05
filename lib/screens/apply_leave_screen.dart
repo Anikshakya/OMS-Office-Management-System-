@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/app_data_controller.dart';
 import '../controllers/app_controller.dart';
+import '../controllers/user_controller.dart';
 import '../models/toast_notification.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
@@ -39,6 +40,7 @@ class ApplyLeaveScreen extends StatefulWidget {
 class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   AppDataController get _data => Get.find<AppDataController>();
   AppController get _appController => Get.find<AppController>();
+  UserController get _userController => Get.find<UserController>();
   final _formKey = GlobalKey<FormState>();
 
   LeaveType _selectedType = LeaveType.casual;
@@ -50,10 +52,6 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   String _halfDayPeriod = 'AM';
   String _quarterPeriod = 'Q1 (Morning)';
 
-  // Auto-selected supervisor + supervisor selection dropdown
-  late String _selectedSupervisor;
-  String? _coveringEmployee;
-
   final TextEditingController _reasonController = TextEditingController(
     text: 'Personal leave and medical checkup',
   );
@@ -64,11 +62,11 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   @override
   void initState() {
     super.initState();
-    // Auto-select reporting manager
-    _selectedSupervisor = _data.currentUser.managerName;
-    if (_data.employees.isNotEmpty) {
-      _coveringEmployee = _data.employees.first.name;
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _userController.fetchEmployeeProfile();
+      }
+    });
   }
 
   @override
@@ -179,7 +177,6 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
       isHalfDay: isHalfOrQuarter,
       halfDayType: periodText,
       reason: reason,
-      coveringEmployee: _coveringEmployee,
     );
 
     setState(() => _isSubmitting = false);
@@ -338,11 +335,8 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
 
                   const SizedBox(height: 16),
 
-                  // 3. Supervisor & Handover Card
-                  _buildSectionLabel(
-                    '3. Supervisor & Handover Details',
-                    isDark,
-                  ),
+                  // 3. Assigned Supervisor
+                  _buildSectionLabel('3. Assigned Supervisor', isDark),
                   const SizedBox(height: 8),
                   _buildSupervisorAndHandoverCard(isDark),
 
@@ -669,101 +663,80 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   }
 
   Widget _buildSupervisorAndHandoverCard(bool isDark) {
-    // List of supervisors/managers available for selection
-    final supervisors = <String>{
-      _data.currentUser.managerName,
-      'Sarah Jenkins (VP Design)',
-      'Marcus Vance (VP Engineering)',
-      'Elena Rostova (Lead HR)',
-      'David Miller (Director of Product)',
-    }.toList();
-
     return GlassContainer(
       borderRadius: 16,
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Auto-Selected Supervisor Dropdown
-          DropdownButtonFormField<String>(
-            initialValue: _selectedSupervisor,
-            decoration: InputDecoration(
-              labelText: 'Assigned Supervisor / Approver (Auto-Selected)',
-              labelStyle: AppTypography.caption(
-                isDark,
-              ).copyWith(fontWeight: FontWeight.bold),
-              prefixIcon: const Icon(
-                Icons.supervisor_account_rounded,
-                size: 20,
-                color: AppColors.primary,
+      child: Obx(() {
+        final isLoading = _userController.isEmployeeProfileLoading.value;
+        final error = _userController.employeeProfileError.value;
+        final supervisor =
+            _userController.employeeProfileData['supervisor_ids_text']
+                ?.toString()
+                .trim() ??
+            '';
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InputDecorator(
+              decoration: InputDecoration(
+                labelText: 'Assigned Supervisor / Approver',
+                labelStyle: AppTypography.caption(
+                  isDark,
+                ).copyWith(fontWeight: FontWeight.bold),
+                prefixIcon: const Icon(
+                  Icons.supervisor_account_rounded,
+                  size: 20,
+                  color: AppColors.primary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      isLoading
+                          ? 'Loading assigned supervisor...'
+                          : supervisor.isNotEmpty
+                          ? supervisor
+                          : error.isNotEmpty
+                          ? 'Unable to load supervisor'
+                          : 'Not assigned',
+                      style: AppTypography.bodyMedium(isDark),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (isLoading)
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else if (error.isNotEmpty)
+                    IconButton(
+                      tooltip: 'Retry',
+                      onPressed: _userController.fetchEmployeeProfile,
+                      icon: const Icon(Icons.refresh_rounded),
+                    ),
+                ],
               ),
             ),
-            items: supervisors.map((sup) {
-              return DropdownMenuItem(
-                value: sup,
-                child: Text(
-                  sup,
-                  style: AppTypography.bodyMedium(isDark),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }).toList(),
-            onChanged: (val) {
-              if (val != null) setState(() => _selectedSupervisor = val);
-            },
-          ),
-
-          const SizedBox(height: 14),
-
-          // Handover Colleague Dropdown
-          DropdownButtonFormField<String>(
-            initialValue: _coveringEmployee,
-            decoration: InputDecoration(
-              labelText: 'Handover / Covering Colleague',
-              labelStyle: AppTypography.caption(isDark),
-              prefixIcon: const Icon(
-                Icons.people_outline_rounded,
-                size: 20,
-                color: AppColors.primary,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
-              ),
+            const SizedBox(height: 14),
+            AppTextField(
+              controller: _emergencyContactController,
+              label: 'Emergency Contact Phone',
+              hint: 'Phone number while on leave...',
+              prefixIcon: Icons.phone_outlined,
             ),
-            items: _data.employees.map((emp) {
-              return DropdownMenuItem(
-                value: emp.name,
-                child: Text(
-                  '${emp.name} (${emp.department})',
-                  style: AppTypography.bodyMedium(isDark),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }).toList(),
-            onChanged: (val) {
-              if (val != null) setState(() => _coveringEmployee = val);
-            },
-          ),
-          const SizedBox(height: 12),
-          AppTextField(
-            controller: _emergencyContactController,
-            label: 'Emergency Contact Phone',
-            hint: 'Phone number while on leave...',
-            prefixIcon: Icons.phone_outlined,
-          ),
-        ],
-      ),
+          ],
+        );
+      }),
     );
   }
 }

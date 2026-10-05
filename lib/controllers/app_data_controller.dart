@@ -753,7 +753,6 @@ class AppDataController extends GetxController {
     String? halfDayType,
     required String reason,
     String? attachmentName,
-    String? coveringEmployee,
   }) {
     final newId =
         'LV-2026-${(leaveRequests.length + 1).toString().padLeft(3, '0')}';
@@ -773,7 +772,6 @@ class AppDataController extends GetxController {
       attachmentName: attachmentName,
       status: LeaveStatus.pending,
       appliedOn: DateTime.now(),
-      coveringEmployee: coveringEmployee ?? 'Team Lead',
     );
 
     leaveRequests.insert(0, request);

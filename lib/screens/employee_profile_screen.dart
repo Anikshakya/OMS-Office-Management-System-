@@ -15,7 +15,7 @@ import '../widgets/common/custom_buttons.dart';
 import '../widgets/common/custom_loading.dart';
 import '../widgets/common/custom_tabs.dart';
 import '../widgets/common/ui_glass_container.dart';
-import '../widgets/profile/edit_profile_dialog.dart';
+import 'employee_profile_edit_screen.dart';
 
 class EmployeeProfileScreen extends StatefulWidget {
   const EmployeeProfileScreen({super.key});
@@ -45,8 +45,12 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     ]);
   }
 
-  void _showEditProfileModal() {
-    showDialog(context: context, builder: (ctx) => const EditProfileDialog());
+  void _openEditProfilePage() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const EmployeeProfileEditScreen(),
+      ),
+    );
   }
 
   void _showLogoutConfirmation() {
@@ -224,10 +228,13 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                 children: [
                   Stack(
                     children: [
-                      AppAvatar(
-                        url: profile['image_name_url']?.toString() ?? '',
-                        name: name,
-                        radius: isNarrow ? 28 : 36,
+                      Hero(
+                        tag: employeeProfileAvatarHeroTag,
+                        child: AppAvatar(
+                          url: profile['image_name_url']?.toString() ?? '',
+                          name: name,
+                          radius: isNarrow ? 28 : 36,
+                        ),
                       ),
                       Positioned(
                         bottom: 0,
@@ -323,7 +330,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                         horizontal: 14,
                         vertical: 8,
                       ),
-                      onPressed: _showEditProfileModal,
+                      onPressed: _openEditProfilePage,
                     ),
                   ),
                   const SizedBox(width: 14),

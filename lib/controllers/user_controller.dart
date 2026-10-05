@@ -24,7 +24,7 @@ class UserController extends GetxController {
     try {
       final apiResponse = await ApiRepo.apiGet(
         apiPath: 'employeeapp/employees/{id}',
-        showToast: true
+        showToast: true,
       );
       if (apiResponse != null && apiResponse['status'] == 'success') {
         final profile = Map<String, dynamic>.from(apiResponse['data'] as Map);
@@ -71,23 +71,14 @@ class UserController extends GetxController {
     try {
       final apiResponse = await ApiRepo.apiGet(
         apiPath: 'employeeapp/employee-families/{id}',
-        showToast: true
+        showToast: true,
       );
       if (apiResponse is Map &&
-          apiResponse['success'] == true &&
-          apiResponse['data'] is List) {
-        final familyRecords = apiResponse['data'] as List;
-        if (familyRecords.isEmpty) {
-          employeeFamilyData.clear();
-        } else if (familyRecords.first is Map) {
-          employeeFamilyData.assignAll(
-            Map<String, dynamic>.from(familyRecords.first as Map),
-          );
-        } else {
-          throw const FormatException(
-            'Employee family response must contain an object.',
-          );
-        }
+          apiResponse['status'] == 'success' &&
+          apiResponse['data'] is Map) {
+        employeeFamilyData.assignAll(
+          Map<String, dynamic>.from(apiResponse['data'] as Map),
+        );
       } else {
         employeeFamilyError.value = apiResponse is Map
             ? apiResponse['message']?.toString() ??

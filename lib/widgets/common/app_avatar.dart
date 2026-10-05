@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 
+const String employeeProfileAvatarHeroTag = 'employee-profile-avatar';
+
 class AppAvatar extends StatelessWidget {
   final String url;
   final String name;

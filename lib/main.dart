@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
-import 'theme/app_theme.dart';
-
-import 'screens/splash_screen.dart';
-
-import 'controllers/user_controller.dart';
 import 'controllers/app_controller.dart';
 import 'controllers/app_data_controller.dart';
 import 'controllers/leave_controller.dart';
 import 'controllers/theme_controller.dart';
+import 'controllers/user_controller.dart';
+import 'screens/splash_screen.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,7 +50,8 @@ class _OmsAppState extends State<OmsApp> {
         darkTheme: AppTheme.darkTheme,
         themeMode: themeController.themeMode.value,
 
-        defaultTransition: Transition.noTransition,
+        defaultTransition: Transition.rightToLeftWithFade,
+        transitionDuration: const Duration(milliseconds: 600),
 
         home: const SplashScreen(),
       ),

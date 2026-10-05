@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
 import 'package:oms/models/toast_notification.dart' show ToastType;
-import 'package:oms/services/toast_service.dart';
 import 'package:oms/screens/apply_leave_screen.dart';
 import 'package:oms/screens/appraisal_screen.dart';
+import 'package:oms/services/toast_service.dart';
 
 class AppController extends GetxController {
   final RxInt selectedPageIndex = 0.obs;
