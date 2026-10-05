@@ -9,6 +9,7 @@ import '../theme/app_typography.dart';
 import '../widgets/common/ui_glass_container.dart';
 import '../widgets/common/custom_buttons.dart';
 import '../widgets/common/custom_cupertino_date_picker.dart';
+import '../widgets/common/custom_item_picker.dart';
 import '../widgets/common/custom_inputs.dart';
 import '../models/leave_request.dart';
 
@@ -38,6 +39,16 @@ class ApplyLeaveScreen extends StatefulWidget {
 }
 
 class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
+  static const List<String> _durationOptions = [
+    'Full Day',
+    '1st Half',
+    '2nd Half',
+    '1st Quarter',
+    '2nd Quarter',
+    '3rd Quarter',
+    '4th Quarter',
+  ];
+
   AppDataController get _data => Get.find<AppDataController>();
   AppController get _appController => Get.find<AppController>();
   UserController get _userController => Get.find<UserController>();
@@ -51,6 +62,25 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   String _durationType = 'full';
   String _halfDayPeriod = 'AM';
   String _quarterPeriod = 'Q1 (Morning)';
+
+  String get _selectedDurationOption {
+    if (_durationType == 'half') {
+      return _halfDayPeriod == 'AM' ? '1st Half' : '2nd Half';
+    }
+    if (_durationType == 'quarter') {
+      switch (_quarterPeriod) {
+        case 'Q1 (Morning)':
+          return '1st Quarter';
+        case 'Q2 (Midday)':
+          return '2nd Quarter';
+        case 'Q3 (Afternoon)':
+          return '3rd Quarter';
+        case 'Q4 (Evening)':
+          return '4th Quarter';
+      }
+    }
+    return 'Full Day';
+  }
 
   final TextEditingController _reasonController = TextEditingController(
     text: 'Personal leave and medical checkup',
@@ -127,6 +157,41 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
         }
       });
     }
+  }
+
+  Future<void> _selectDuration() async {
+    final selectedOption = await showCustomCupertinoItemPicker<String>(
+      context: context,
+      items: _durationOptions,
+      initialItem: _selectedDurationOption,
+      itemLabelBuilder: (item) => item,
+      title: 'Select Leave Duration',
+    );
+    if (selectedOption == null || !mounted) return;
+
+    setState(() {
+      if (selectedOption == 'Full Day') {
+        _durationType = 'full';
+      } else if (selectedOption == '1st Half') {
+        _durationType = 'half';
+        _halfDayPeriod = 'AM';
+      } else if (selectedOption == '2nd Half') {
+        _durationType = 'half';
+        _halfDayPeriod = 'PM';
+      } else if (selectedOption == '1st Quarter') {
+        _durationType = 'quarter';
+        _quarterPeriod = 'Q1 (Morning)';
+      } else if (selectedOption == '2nd Quarter') {
+        _durationType = 'quarter';
+        _quarterPeriod = 'Q2 (Midday)';
+      } else if (selectedOption == '3rd Quarter') {
+        _durationType = 'quarter';
+        _quarterPeriod = 'Q3 (Afternoon)';
+      } else {
+        _durationType = 'quarter';
+        _quarterPeriod = 'Q4 (Evening)';
+      }
+    });
   }
 
   String _formatDate(DateTime dt) {
@@ -544,87 +609,43 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
           const Divider(),
           const SizedBox(height: 10),
 
-          // Responsive Duration Selector (Full, Half, Quarter)
+          // Leave duration selector
           Text(
-            'Duration Type',
+            'Duration',
             style: AppTypography.caption(
               isDark,
             ).copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ChoiceChip(
-                label: const Text('Full Day (1.0)'),
-                selected: _durationType == 'full',
-                onSelected: (_) => setState(() => _durationType = 'full'),
+          InkWell(
+            onTap: _selectDuration,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.cardDark : AppColors.bgLight,
+                borderRadius: BorderRadius.circular(12),
               ),
-              ChoiceChip(
-                label: const Text('Half Day (0.5)'),
-                selected: _durationType == 'half',
-                onSelected: (_) => setState(() => _durationType = 'half'),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _selectedDurationOption,
+                      style: AppTypography.bodyMedium(
+                        isDark,
+                      ).copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.unfold_more_rounded,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
+                ],
               ),
-              ChoiceChip(
-                label: const Text('Quarter Day (0.25)'),
-                selected: _durationType == 'quarter',
-                onSelected: (_) => setState(() => _durationType = 'quarter'),
-              ),
-            ],
+            ),
           ),
-
-          if (_durationType == 'half') ...[
-            const SizedBox(height: 10),
-            Text(
-              'Select Half Day Period',
-              style: AppTypography.caption(isDark).copyWith(fontSize: 11),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                ChoiceChip(
-                  label: const Text('AM (Morning Session)'),
-                  selected: _halfDayPeriod == 'AM',
-                  onSelected: (_) => setState(() => _halfDayPeriod = 'AM'),
-                ),
-                ChoiceChip(
-                  label: const Text('PM (Afternoon Session)'),
-                  selected: _halfDayPeriod == 'PM',
-                  onSelected: (_) => setState(() => _halfDayPeriod = 'PM'),
-                ),
-              ],
-            ),
-          ],
-
-          if (_durationType == 'quarter') ...[
-            const SizedBox(height: 10),
-            Text(
-              'Select Quarter Period',
-              style: AppTypography.caption(isDark).copyWith(fontSize: 11),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children:
-                  [
-                    'Q1 (Morning)',
-                    'Q2 (Midday)',
-                    'Q3 (Afternoon)',
-                    'Q4 (Evening)',
-                  ].map((q) {
-                    return ChoiceChip(
-                      label: Text(q),
-                      selected: _quarterPeriod == q,
-                      onSelected: (_) => setState(() => _quarterPeriod = q),
-                    );
-                  }).toList(),
-            ),
-          ],
 
           const SizedBox(height: 12),
 
