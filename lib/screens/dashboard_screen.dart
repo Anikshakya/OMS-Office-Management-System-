@@ -11,6 +11,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common/app_avatar.dart';
 import '../widgets/common/custom_buttons.dart';
+import '../widgets/common/custom_cupertino_date_picker.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -148,9 +149,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withValues(
-              alpha: isDark ? 0.35 : 0.2,
-            ),
+            color: primaryColor.withValues(alpha: isDark ? 0.35 : 0.2),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -230,9 +229,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: Colors.white.withValues(
-                                  alpha: 0.85,
-                                ),
+                                color: Colors.white.withValues(alpha: 0.85),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w400,
                                 height: 1.2,
@@ -248,29 +245,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         user.department.toString().isNotEmpty) ...[
                       const SizedBox(width: 8),
                       ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: 130,
-                        ),
+                        constraints: const BoxConstraints(maxWidth: 130),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(
-                              alpha: 0.15,
-                            ),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: Colors.white.withValues(
-                                alpha: 0.08,
-                              ),
+                              color: Colors.white.withValues(alpha: 0.08),
                             ),
                           ),
                           child: Text(
-                            user.department
-                                .toString()
-                                .toUpperCase(),
+                            user.department.toString().toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -308,9 +297,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         'Have a Good Day!',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.titleMedium(
-                          isDark,
-                        ).copyWith(
+                        style: AppTypography.titleMedium(isDark).copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
                         ),
@@ -372,14 +359,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedOnLeaveDate,
-                        firstDate: DateTime.now().subtract(
-                          const Duration(days: 180),
-                        ),
-                        lastDate: DateTime.now().add(const Duration(days: 180)),
+                      final now = DateTime.now();
+                      final dateController = TextEditingController(
+                        text: _selectedOnLeaveDate
+                            .toIso8601String()
+                            .split('T')
+                            .first,
                       );
+                      final DateTime? picked;
+                      try {
+                        picked = await showCustomCupertinoDatePicker(
+                          context: context,
+                          controller: dateController,
+                          minDate: now.subtract(const Duration(days: 180)),
+                          maxDate: now.add(const Duration(days: 180)),
+                        );
+                      } finally {
+                        dateController.dispose();
+                      }
                       if (picked != null) {
                         _jumpToDate(picked);
                       }
@@ -491,10 +488,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (onLeaveList.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 32,
-          vertical: 80,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 80),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -520,9 +514,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     : Colors.black.withValues(alpha: 0.45),
               ),
             ),
-      
+
             const SizedBox(height: 14),
-      
+
             Text(
               'No Leave Scheduled',
               textAlign: TextAlign.center,
@@ -532,13 +526,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 letterSpacing: -0.1,
               ),
             ),
-      
+
             const SizedBox(height: 5),
-      
+
             ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 320,
-              ),
+              constraints: const BoxConstraints(maxWidth: 320),
               child: Text(
                 'No employees are scheduled to be on leave on '
                 '${_formatDateShort(date)}.',

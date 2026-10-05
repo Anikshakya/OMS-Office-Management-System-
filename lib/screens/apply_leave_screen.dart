@@ -7,6 +7,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common/ui_glass_container.dart';
 import '../widgets/common/custom_buttons.dart';
+import '../widgets/common/custom_cupertino_date_picker.dart';
 import '../widgets/common/custom_inputs.dart';
 import '../models/leave_request.dart';
 
@@ -95,22 +96,33 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
     final initialDate = isStart ? _startDate : _endDate;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+    final now = DateTime.now();
+    final dateController = TextEditingController(
+      text: initialDate.toIso8601String().split('T').first,
     );
+    final DateTime? picked;
+    try {
+      picked = await showCustomCupertinoDatePicker(
+        showTime: true,
+        context: context,
+        controller: dateController,
+        minDate: now.subtract(const Duration(days: 30)),
+        maxDate: now.add(const Duration(days: 365)),
+      );
+    } finally {
+      dateController.dispose();
+    }
 
-    if (picked != null) {
+    final selectedDate = picked;
+    if (selectedDate != null) {
       setState(() {
         if (isStart) {
-          _startDate = picked;
+          _startDate = selectedDate;
           if (_endDate.isBefore(_startDate)) {
             _endDate = _startDate;
           }
         } else {
-          _endDate = picked;
+          _endDate = selectedDate;
           if (_endDate.isBefore(_startDate)) {
             _startDate = _endDate;
           }
@@ -185,10 +197,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     final remainingDays = selectedBalance?.remaining ?? 0;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Apply Leave'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Apply Leave'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
         child: Center(
@@ -207,13 +216,13 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                       builder: (context) {
                         // Fetch color directly from the enum
                         final leaveTypeColor = _selectedType.color;
-      
+
                         final double totalAllocated = (usedDays + remainingDays)
                             .toDouble();
                         final double progress = totalAllocated > 0
                             ? (usedDays / totalAllocated).clamp(0.0, 1.0)
                             : 0.0;
-      
+
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -241,7 +250,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: leaveTypeColor.withValues(alpha: 0.12),
+                                    color: leaveTypeColor.withValues(
+                                      alpha: 0.12,
+                                    ),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: leaveTypeColor.withValues(
@@ -262,7 +273,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                               ],
                             ),
                             const SizedBox(height: 14),
-      
+
                             // Graphical Linear Progress Bar matching LeaveType Color
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
@@ -278,7 +289,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-      
+
                             // Sub-metrics: Used vs Total Quota
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -310,30 +321,33 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                       },
                     ),
                   ),
-      
+
                   const SizedBox(height: 16),
-      
+
                   // 1. Leave Category Selection
                   _buildSectionLabel('1. Leave Category', isDark),
                   const SizedBox(height: 8),
                   _buildCategoryChips(isDark),
-      
+
                   const SizedBox(height: 16),
-      
+
                   // 2. Date Range & Duration Card
                   _buildSectionLabel('2. Date Range & Duration Type', isDark),
                   const SizedBox(height: 8),
                   _buildDateCard(isDark),
-      
+
                   const SizedBox(height: 16),
-      
+
                   // 3. Supervisor & Handover Card
-                  _buildSectionLabel('3. Supervisor & Handover Details', isDark),
+                  _buildSectionLabel(
+                    '3. Supervisor & Handover Details',
+                    isDark,
+                  ),
                   const SizedBox(height: 8),
                   _buildSupervisorAndHandoverCard(isDark),
-      
+
                   const SizedBox(height: 16),
-      
+
                   // 4. Reason / Cause Card
                   _buildSectionLabel('4. Reason for Absence', isDark),
                   const SizedBox(height: 8),
@@ -347,9 +361,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                       maxLines: 3,
                     ),
                   ),
-      
+
                   const SizedBox(height: 24),
-      
+
                   // Submit Button
                   AppButton.primary(
                     label: _isSubmitting

@@ -7,6 +7,7 @@ import '../widgets/common/ui_glass_container.dart';
 import '../widgets/common/custom_buttons.dart';
 import '../widgets/common/custom_selectors.dart';
 import '../widgets/common/custom_states.dart';
+import '../widgets/common/custom_cupertino_date_picker.dart';
 import '../widgets/common/app_avatar.dart';
 
 class EmployeesOnLeaveTodayScreen extends StatefulWidget {
@@ -79,18 +80,29 @@ class _EmployeesOnLeaveTodayScreenState
                         ),
                         InkWell(
                           onTap: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: _selectedDate,
-                              firstDate: DateTime.now().subtract(
-                                const Duration(days: 180),
-                              ),
-                              lastDate: DateTime.now().add(
-                                const Duration(days: 180),
-                              ),
+                            final now = DateTime.now();
+                            final dateController = TextEditingController(
+                              text: _selectedDate
+                                  .toIso8601String()
+                                  .split('T')
+                                  .first,
                             );
-                            if (picked != null) {
-                              setState(() => _selectedDate = picked);
+                            final DateTime? picked;
+                            try {
+                              picked = await showCustomCupertinoDatePicker(
+                                context: context,
+                                controller: dateController,
+                                minDate: now.subtract(
+                                  const Duration(days: 180),
+                                ),
+                                maxDate: now.add(const Duration(days: 180)),
+                              );
+                            } finally {
+                              dateController.dispose();
+                            }
+                            final selectedDate = picked;
+                            if (selectedDate != null) {
+                              setState(() => _selectedDate = selectedDate);
                             }
                           },
                           borderRadius: BorderRadius.circular(10),
