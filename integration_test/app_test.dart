@@ -11,7 +11,7 @@ import 'package:oms/widgets/common/custom_inputs.dart' show AppSearchField;
 /// End-to-end tests for the OMS app.
 ///
 /// Run on a connected device / emulator:
-///   flutter test integration_test/app_test.dart -d <device-id>
+///   flutter test integration_test/app_test.dart -d device-id
 ///
 /// The network layer is replaced by [FakeApiAdapter] (see support/), so the
 /// tests don't need the real server and always see the same data.

@@ -13,14 +13,21 @@ Future<DateTime?> showCustomCupertinoDatePicker({
   String dateFormat = 'yyyy-MM-dd',
   bool showTime = false,
   String timeFormat = 'h:mm a',
-  Locale? locale, // Optional explicit locale override (e.g. Locale('ja'))
+  Locale? locale,
 }) async {
   final ThemeData theme = Theme.of(context);
   final Color selectedAccentColor = accentColor ?? theme.colorScheme.primary;
 
-  // Resolve active locale (passed locale -> context locale -> default fallback)
+  // 1. Safe Locale Resolution
   final Locale activeLocale = locale ?? Localizations.localeOf(context);
-  final String localeString = activeLocale.toString();
+  String localeString = activeLocale.toString();
+
+  if (!DateFormat.localeExists(localeString)) {
+    localeString = activeLocale.languageCode;
+    if (!DateFormat.localeExists(localeString)) {
+      localeString = 'en';
+    }
+  }
 
   final DateFormat dateFormatter = DateFormat(dateFormat, localeString);
   final DateFormat timeFormatter = DateFormat(timeFormat, localeString);
@@ -97,7 +104,7 @@ Future<DateTime?> showCustomCupertinoDatePicker({
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 1. TOP HEADER
+                  // Header Bar
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -127,7 +134,7 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: textColor,
-                            fontSize: 17,
+                            fontSize: 20,
                             fontWeight: FontWeight.w600,
                             letterSpacing: -0.2,
                           ),
@@ -159,7 +166,7 @@ Future<DateTime?> showCustomCupertinoDatePicker({
 
                   const SizedBox(height: 16),
 
-                  // 2. BUBBLY PILLS (Localized Date & Time String)
+                  // Header Bubbly Pills
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -193,7 +200,7 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                               color: !isEditingTime
                                   ? selectedAccentColor
                                   : textColor.withValues(alpha: 0.6),
-                              fontSize: 15,
+                              fontSize: 18,
                               fontWeight: FontWeight.w600,
                               letterSpacing: -0.3,
                             ),
@@ -233,7 +240,7 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                                 color: isEditingTime
                                     ? selectedAccentColor
                                     : textColor,
-                                fontSize: 15,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: -0.3,
                               ),
@@ -248,13 +255,13 @@ Future<DateTime?> showCustomCupertinoDatePicker({
 
                   const SizedBox(height: 12),
 
-                  // 3. DYNAMIC PICKER CONTENT
+                  // Dynamic Date / Time View
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
                     child: isEditingTime
                         ? SizedBox(
                             key: const ValueKey("TimePicker"),
-                            height: 320,
+                            height: 360,
                             child: CupertinoTheme(
                               data: CupertinoThemeData(
                                 brightness: theme.brightness,
@@ -286,9 +293,10 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                           )
                         : SizedBox(
                             key: const ValueKey("CalendarPicker"),
-                            height: 330,
+                            height: 360,
                             child: Theme(
                               data: theme.copyWith(
+                                visualDensity: VisualDensity.comfortable,
                                 colorScheme: theme.colorScheme.copyWith(
                                   primary: selectedAccentColor,
                                   onPrimary: theme.colorScheme.onPrimary,
@@ -299,31 +307,30 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                                   color: selectedAccentColor,
                                   size: 24,
                                 ),
-                                // Fine-tuned DatePickerTheme to fix circle size & text padding
                                 datePickerTheme: DatePickerThemeData(
                                   dayShape: WidgetStateProperty.all(
                                     const CircleBorder(),
                                   ),
                                   dayStyle: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 textTheme: theme.textTheme.copyWith(
                                   titleMedium: TextStyle(
                                     color: textColor,
-                                    fontSize: 18,
+                                    fontSize: 19,
                                     fontWeight: FontWeight.bold,
                                   ),
                                   bodyLarge: TextStyle(
                                     color: textColor,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                   bodyMedium: TextStyle(
                                     color: textColor.withValues(alpha: 0.6),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
