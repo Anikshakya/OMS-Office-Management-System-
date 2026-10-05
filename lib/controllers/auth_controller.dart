@@ -19,7 +19,9 @@ class AuthController extends GetxController {
         apiPath: "auth/login",
         data: data,
       );
-      if (apiReasponse != null && apiReasponse["status"] == "success") {
+      // ApiRepo returns a plain String (not a Map) for network/timeout errors,
+      // so check the type before indexing, otherwise `"..."["status"]` throws.
+      if (apiReasponse is Map && apiReasponse["status"] == "success") {
         write(StorageKeys.apiToken, apiReasponse['data']['token']);
 
         if (apiReasponse['data']['user'] != null) {
@@ -50,7 +52,7 @@ class AuthController extends GetxController {
         apiPath: "auth/logout",
         data: {},
       );
-      if (apiReasponse != null && apiReasponse["status"] == "success") {
+      if (apiReasponse is Map && apiReasponse["status"] == "success") {
         clearAllData();
         Get.offAll(() => const LoginPage());
         // Handle successful login, e.g., navigate to the home screen
