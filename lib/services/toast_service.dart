@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/toast_notification.dart' show ToastType;
+import '../theme/app_colors.dart';
 
 /// Centralized Toast Notification service allowing flexible UI feedback.
 class ToastService {
@@ -17,14 +18,14 @@ class ToastService {
     Color? backgroundColor,
     Color textColor = Colors.black,
     IconData? icon,
+    Color? accentColor,
   }) {
     if (message.isEmpty || Get.key.currentState == null) return;
 
     final heading = headingMessage ?? (title.isEmpty ? null : title);
     final succeeded = isSuccess ?? icon == Icons.check_circle_rounded;
-    final statusColor = succeeded
-        ? const Color(0xFF34C759)
-        : const Color(0xFFFF3B30);
+    final statusColor =
+        accentColor ?? (succeeded ? AppColors.success : AppColors.error);
     final surfaceColor =
         backgroundColor ??
         (Get.isDarkMode ? const Color(0xFF242426) : const Color(0xFFFCFCFD));
@@ -113,14 +114,20 @@ class ToastService {
   }
 
   static void showAppToast(String title, String message, ToastType type) {
-    final (succeeded, icon) = switch (type) {
-      ToastType.success => (true, Icons.check_circle),
-      ToastType.error => (false, Icons.info),
-      ToastType.warning => (false, Icons.info),
-      ToastType.info => (false, Icons.info),
+    final (color, icon) = switch (type) {
+      ToastType.success => (AppColors.success, Icons.check_circle_rounded),
+      ToastType.error => (AppColors.error, Icons.error_outline_rounded),
+      ToastType.warning => (AppColors.warning, Icons.warning_amber_rounded),
+      ToastType.info => (AppColors.primary, Icons.info_outline_rounded),
     };
 
-    showToast(title: title, message: message, isSuccess: succeeded, icon: icon);
+    showToast(
+      title: title,
+      message: message,
+      isSuccess: type == ToastType.success,
+      icon: icon,
+      accentColor: color,
+    );
   }
 
   /// Helper for displaying success notifications.
