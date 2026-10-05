@@ -53,6 +53,8 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   AppController get _appController => Get.find<AppController>();
   UserController get _userController => Get.find<UserController>();
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
+  final _categoryPickerKey = GlobalKey();
 
   LeaveType _selectedType = LeaveType.casual;
   DateTime _startDate = DateTime.now().add(const Duration(days: 2));
@@ -101,6 +103,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _reasonController.dispose();
     _emergencyContactController.dispose();
     super.dispose();
@@ -261,6 +264,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Apply Leave'), centerTitle: true),
       body: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
         child: Center(
           child: ConstrainedBox(
@@ -389,7 +393,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                   // 1. Leave Category Selection
                   _buildSectionLabel('1. Leave Category', isDark),
                   const SizedBox(height: 8),
-                  _buildCategoryChips(isDark),
+                  _buildCategoryPicker(isDark),
 
                   const SizedBox(height: 16),
 
@@ -453,58 +457,81 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     );
   }
 
-  Widget _buildCategoryChips(bool isDark) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: LeaveType.values.map((type) {
-        final isSelected = _selectedType == type;
-        final color = type.color;
+  Future<void> _selectLeaveCategory() async {
+    final selectedType = await showCustomCupertinoItemPicker<LeaveType>(
+      context: context,
+      items: LeaveType.values,
+      initialItem: _selectedType,
+      itemLabelBuilder: (type) => type.label,
+      title: 'Select Leave Category',
+    );
+    if (selectedType == null || !mounted) return;
 
-        return GestureDetector(
-          onTap: () => setState(() => _selectedType = type),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? color
-                  : (isDark ? AppColors.surfaceDark : Colors.white),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isSelected
-                    ? color
-                    : (isDark ? AppColors.borderDark : AppColors.borderLight),
-                width: 1.5,
-              ),
-              boxShadow: isSelected ? AppColors.softShadow(isDark) : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.circle,
-                  size: 8,
-                  color: isSelected ? Colors.white : color,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  type.label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark
-                              ? AppColors.textPrimaryDark
-                              : AppColors.textPrimaryLight),
-                  ),
-                ),
-              ],
-            ),
-          ),
+    final pickerContext = _categoryPickerKey.currentContext;
+    final pickerRenderObject = pickerContext?.findRenderObject();
+    final previousPickerTop = pickerRenderObject is RenderBox
+        ? pickerRenderObject.localToGlobal(Offset.zero).dy
+        : null;
+
+    setState(() => _selectedType = selectedType);
+    if (previousPickerTop != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scrollController.hasClients) return;
+        final updatedContext = _categoryPickerKey.currentContext;
+        final updatedRenderObject = updatedContext?.findRenderObject();
+        if (updatedRenderObject is! RenderBox) return;
+
+        final updatedPickerTop = updatedRenderObject
+            .localToGlobal(Offset.zero)
+            .dy;
+        final scrollDelta = updatedPickerTop - previousPickerTop;
+        if (scrollDelta == 0) return;
+
+        final position = _scrollController.position;
+        _scrollController.jumpTo(
+          (position.pixels + scrollDelta)
+              .clamp(0.0, position.maxScrollExtent)
+              .toDouble(),
         );
-      }).toList(),
+      });
+    }
+  }
+
+  Widget _buildCategoryPicker(bool isDark) {
+    final categoryColor = _selectedType.color;
+
+    return InkWell(
+      key: _categoryPickerKey,
+      onTap: _selectLeaveCategory,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.cardDark : AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(12),
+          border: isDark ? null : Border.all(color: AppColors.borderLight),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.circle, size: 10, color: categoryColor),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _selectedType.label,
+                style: AppTypography.bodyMedium(
+                  isDark,
+                ).copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Icon(
+              Icons.unfold_more_rounded,
+              size: 20,
+              color: AppColors.primary,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
