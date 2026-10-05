@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/app_data_controller.dart';
+
 import '../controllers/app_controller.dart';
+import '../controllers/app_data_controller.dart';
+import '../models/employee.dart';
 import '../models/toast_notification.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../widgets/common/ui_glass_container.dart';
+import '../widgets/common/app_avatar.dart';
 import '../widgets/common/custom_buttons.dart';
 import '../widgets/common/custom_inputs.dart';
-import '../widgets/common/app_avatar.dart';
-import '../models/employee.dart';
+import '../widgets/common/ui_glass_container.dart';
 
 class EmployeeListScreen extends StatefulWidget {
   const EmployeeListScreen({super.key});

@@ -5,20 +5,20 @@ import 'package:oms/controllers/auth_controller.dart';
 import '../controllers/app_controller.dart';
 import '../controllers/app_data_controller.dart';
 import '../controllers/theme_controller.dart';
+import '../controllers/user_controller.dart';
 import '../models/employee.dart';
 import '../models/toast_notification.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common/app_avatar.dart';
 import '../widgets/common/custom_buttons.dart';
+import '../widgets/common/custom_loading.dart';
 import '../widgets/common/custom_tabs.dart';
 import '../widgets/common/ui_glass_container.dart';
 import '../widgets/profile/edit_profile_dialog.dart';
 
 class EmployeeProfileScreen extends StatefulWidget {
-  final Employee? employee;
-
-  const EmployeeProfileScreen({super.key, this.employee});
+  const EmployeeProfileScreen({super.key});
 
   @override
   State<EmployeeProfileScreen> createState() => _EmployeeProfileScreenState();
@@ -30,6 +30,12 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
   ThemeController get _themeController => Get.find<ThemeController>();
 
   int _activeTab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    Get.find<UserController>().fetchEmployeeProfile();
+  }
 
   void _showEditProfileModal() {
     showDialog(context: context, builder: (ctx) => const EditProfileDialog());
@@ -51,68 +57,112 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final emp = widget.employee ?? _data.currentUser;
-    final isSelf =
-        widget.employee == null || widget.employee!.id == _data.currentUser.id;
+    return Obx(() {
+      final userController = Get.find<UserController>();
+      if (userController.isEmployeeProfileLoading.value) {
+        return loadingWidget(AppColors.primary);
+      }
+      if (userController.employeeProfileError.value.isNotEmpty) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  userController.employeeProfileError.value,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodyMedium(
+                    isDark,
+                  ).copyWith(color: AppColors.error),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => userController.fetchEmployeeProfile(),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Hero Profile Header Card
-              _buildProfileHeader(context, isDark, emp, isSelf),
+      final profile = Map<String, dynamic>.from(
+        userController.employeeProfileData,
+      );
 
-              const SizedBox(height: 16),
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Hero Profile Header Card
+                _buildProfileHeader(context, isDark, profile),
 
-              // Theme Settings Quick Bar (Placed directly in profile!)
-              if (isSelf) ...[
+                const SizedBox(height: 16),
+
+                // Theme Settings Quick Bar (Placed directly in profile!)
                 _buildThemeToggleCard(isDark),
                 const SizedBox(height: 16),
+
+                // Navigation Tabs
+                AppTabBar(
+                  tabs: const [
+                    'Personal',
+                    'Employment',
+                    'Documents',
+                    'Qualifications',
+                    'Experience',
+                  ],
+                  selectedIndex: _activeTab,
+                  onTabChanged: (index) => setState(() => _activeTab = index),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Tab Content Views
+                IndexedStack(
+                  index: _activeTab,
+                  children: [
+                    _buildPersonalInfoTab(context, isDark, profile),
+                    _buildEmploymentTab(context, isDark, profile),
+                    _buildDocumentsTab(context, isDark, _data.currentUser),
+                    _buildQualificationsTab(context, isDark, _data.currentUser),
+                    _buildExperienceTab(context, isDark, _data.currentUser),
+                  ],
+                ),
               ],
-
-              // Navigation Tabs
-              AppTabBar(
-                tabs: const [
-                  'Personal',
-                  'Employment',
-                  'Documents',
-                  'Qualifications',
-                  'Experience',
-                ],
-                selectedIndex: _activeTab,
-                onTabChanged: (index) => setState(() => _activeTab = index),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Tab Content Views
-              IndexedStack(
-                index: _activeTab,
-                children: [
-                  _buildPersonalInfoTab(context, isDark, emp),
-                  _buildEmploymentTab(context, isDark, emp),
-                  _buildDocumentsTab(context, isDark, emp),
-                  _buildQualificationsTab(context, isDark, emp),
-                  _buildExperienceTab(context, isDark, emp),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildProfileHeader(
     BuildContext context,
     bool isDark,
-    Employee emp,
-    bool isSelf,
+    Map<String, dynamic> profile,
   ) {
+    final name = _profileValue(profile, 'employee_name');
+    final designation = _profileValue(profile, 'current_designation_name');
+    final employeeCode = _profileValue(profile, 'employee_code');
+    final status = _profileValue(profile, 'active_text');
+    final location =
+        [
+              profile['municipality_name'],
+              profile['district_name'],
+              profile['province_name'],
+            ]
+            .where(
+              (value) => value != null && value.toString().trim().isNotEmpty,
+            )
+            .map((value) => value.toString().trim())
+            .join(', ');
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -142,8 +192,8 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                   Stack(
                     children: [
                       AppAvatar(
-                        url: emp.avatarUrl,
-                        name: emp.name,
+                        url: profile['image_name_url']?.toString() ?? '',
+                        name: name,
                         radius: isNarrow ? 28 : 36,
                       ),
                       Positioned(
@@ -175,7 +225,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                           children: [
                             Flexible(
                               child: Text(
-                                emp.name,
+                                name,
                                 style: AppTypography.displayMedium(
                                   isDark,
                                 ).copyWith(fontWeight: FontWeight.bold),
@@ -195,7 +245,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                emp.status,
+                                status,
                                 style: const TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
@@ -207,7 +257,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${emp.designation} • ${emp.department}',
+                          designation,
                           style: AppTypography.titleMedium(isDark).copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
@@ -216,7 +266,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Code: ${emp.employeeCode} • ${emp.location}',
+                          'Code: $employeeCode • $location',
                           style: AppTypography.caption(isDark),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -226,44 +276,47 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                 ],
               ),
 
-              if (isSelf) ...[
-                const SizedBox(height: 14),
-                const Divider(height: 1),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: AppButton.primary(
-                        label: 'Edit Profile',
-                        icon: Icons.edit_outlined,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        onPressed: _showEditProfileModal,
+              const SizedBox(height: 14),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: AppButton.primary(
+                      label: 'Edit Profile',
+                      icon: Icons.edit_outlined,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
                       ),
+                      onPressed: _showEditProfileModal,
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: AppButton.outlined(
-                        label: 'Log Out',
-                        icon: Icons.logout_rounded,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        onPressed: _showLogoutConfirmation,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: AppButton.outlined(
+                      label: 'Log Out',
+                      icon: Icons.logout_rounded,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
                       ),
+                      onPressed: _showLogoutConfirmation,
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ],
           );
         },
       ),
     );
+  }
+
+  String _profileValue(Map<String, dynamic> profile, String key) {
+    final value = profile[key]?.toString().trim();
+    return value == null || value.isEmpty ? 'Not provided' : value;
   }
 
   Widget _buildThemeToggleCard(bool isDark) {
@@ -320,7 +373,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
   Widget _buildPersonalInfoTab(
     BuildContext context,
     bool isDark,
-    Employee emp,
+    Map<String, dynamic> profile,
   ) {
     return GlassContainer(
       borderRadius: 16,
@@ -329,19 +382,85 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildDetailGrid([
-            _DetailItem('Full Name', emp.name, Icons.person_outline_rounded),
-            _DetailItem('Email Address', emp.email, Icons.email_outlined),
-            _DetailItem('Phone Number', emp.phone, Icons.phone_outlined),
-            _DetailItem('Date of Birth', emp.dob, Icons.cake_outlined),
             _DetailItem(
-              'Current Location',
-              emp.location,
+              'Full Name',
+              _profileValue(profile, 'employee_name'),
+              Icons.person_outline_rounded,
+            ),
+            _DetailItem(
+              'Name (Local)',
+              _profileValue(profile, 'employee_name_locale'),
+              Icons.translate_rounded,
+            ),
+            _DetailItem(
+              'Gender',
+              _profileValue(profile, 'gender_text'),
+              Icons.people_outline_rounded,
+            ),
+            _DetailItem(
+              'Marital Status',
+              _profileValue(profile, 'marital_status_text'),
+              Icons.favorite_border_rounded,
+            ),
+            _DetailItem(
+              'Email Address',
+              _profileValue(profile, 'email'),
+              Icons.email_outlined,
+            ),
+            _DetailItem(
+              'Personal Email',
+              _profileValue(profile, 'email_per'),
+              Icons.alternate_email_rounded,
+            ),
+            _DetailItem(
+              'Phone Number',
+              _profileValue(profile, 'phone'),
+              Icons.phone_outlined,
+            ),
+            _DetailItem(
+              'Secondary Phone',
+              _profileValue(profile, 'phone_2'),
+              Icons.phone_android_outlined,
+            ),
+            _DetailItem(
+              'Date of Birth (AD)',
+              _profileValue(profile, 'dob_ad'),
+              Icons.cake_outlined,
+            ),
+            _DetailItem(
+              'Date of Birth (BS)',
+              _profileValue(profile, 'dob_bs'),
+              Icons.calendar_month_outlined,
+            ),
+            _DetailItem(
+              'Current Address',
+              _profileValue(profile, 'address_current'),
               Icons.location_on_outlined,
             ),
             _DetailItem(
-              'Residential Address',
-              emp.address,
+              'Permanent Address',
+              _profileValue(profile, 'address_permanent'),
               Icons.home_outlined,
+            ),
+            _DetailItem(
+              'Municipality',
+              _profileValue(profile, 'municipality_name'),
+              Icons.location_city_outlined,
+            ),
+            _DetailItem(
+              'District',
+              _profileValue(profile, 'district_name'),
+              Icons.map_outlined,
+            ),
+            _DetailItem(
+              'Province',
+              _profileValue(profile, 'province_name'),
+              Icons.public_outlined,
+            ),
+            _DetailItem(
+              'Zone',
+              _profileValue(profile, 'zone_name'),
+              Icons.explore_outlined,
             ),
           ], isDark),
         ],
@@ -349,7 +468,11 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     );
   }
 
-  Widget _buildEmploymentTab(BuildContext context, bool isDark, Employee emp) {
+  Widget _buildEmploymentTab(
+    BuildContext context,
+    bool isDark,
+    Map<String, dynamic> profile,
+  ) {
     return GlassContainer(
       borderRadius: 16,
       padding: const EdgeInsets.all(16),
@@ -359,32 +482,32 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
           _buildDetailGrid([
             _DetailItem(
               'Employee Code',
-              emp.employeeCode,
+              _profileValue(profile, 'employee_code'),
               Icons.badge_outlined,
             ),
             _DetailItem(
-              'Department',
-              emp.department,
-              Icons.corporate_fare_outlined,
-            ),
-            _DetailItem(
-              'Designation',
-              emp.designation,
+              'First Designation',
+              _profileValue(profile, 'first_designation_name'),
               Icons.work_outline_rounded,
             ),
             _DetailItem(
-              'Employment Type',
-              emp.employmentType,
-              Icons.card_membership_rounded,
+              'Previous Designation',
+              _profileValue(profile, 'previous_designation_name'),
+              Icons.work_outline_rounded,
+            ),
+            _DetailItem(
+              'Current Designation',
+              _profileValue(profile, 'current_designation_name'),
+              Icons.work_outline_rounded,
             ),
             _DetailItem(
               'Joining Date',
-              emp.joinDate,
+              _profileValue(profile, 'date_joined'),
               Icons.event_available_outlined,
             ),
             _DetailItem(
               'Reporting Manager',
-              emp.managerName,
+              _profileValue(profile, 'supervisor_ids_text'),
               Icons.supervisor_account_outlined,
             ),
           ], isDark),

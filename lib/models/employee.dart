@@ -71,6 +71,8 @@ class LeaveBalance {
 class Employee {
   final String id;
   final String name;
+  final String firstDesignation;
+  final String prevDesignation;
   final String designation;
   final String department;
   final String email;
@@ -94,6 +96,8 @@ class Employee {
   const Employee({
     required this.id,
     required this.name,
+    required this.firstDesignation,
+    required this.prevDesignation,
     required this.designation,
     required this.department,
     required this.email,
@@ -122,6 +126,8 @@ class Employee {
   Employee copyWith({
     String? id,
     String? name,
+    String? firstDesignation,
+    String? prevDesignation,
     String? designation,
     String? department,
     String? email,
@@ -143,6 +149,8 @@ class Employee {
     return Employee(
       id: id ?? this.id,
       name: name ?? this.name,
+      firstDesignation: firstDesignation ?? this.firstDesignation,
+      prevDesignation: prevDesignation ?? this.prevDesignation,
       designation: designation ?? this.designation,
       department: department ?? this.department,
       email: email ?? this.email,

@@ -1,10 +1,11 @@
-import '../models/employee.dart';
-import '../models/leave_request.dart';
-import '../models/leave_quota.dart';
-import '../models/appraisal.dart';
 import 'package:get/get.dart';
-import '../controllers/user_controller.dart';
+
 import '../controllers/app_controller.dart';
+import '../controllers/user_controller.dart';
+import '../models/appraisal.dart';
+import '../models/employee.dart';
+import '../models/leave_quota.dart';
+import '../models/leave_request.dart';
 import '../models/toast_notification.dart';
 
 class AppDataController extends GetxController {
@@ -48,6 +49,8 @@ class AppDataController extends GetxController {
     currentUser = Employee(
       id: currentUser.id,
       name: name,
+      firstDesignation: currentUser.firstDesignation,
+      prevDesignation: currentUser.prevDesignation,
       designation: designation,
       department: department,
       email: email,
@@ -106,6 +109,8 @@ class AppDataController extends GetxController {
     currentUser = const Employee(
       id: 'EMP-001',
       name: 'Alex Morgan',
+      firstDesignation: 'Principal Product Architect & UX Strategist',
+      prevDesignation: 'Principal Product Architect & UX Strategist',
       designation: 'Principal Product Architect & UX Strategist',
       department: 'Product & Design',
       email: 'alex.morgan@corp.com',
@@ -189,6 +194,8 @@ class AppDataController extends GetxController {
       const Employee(
         id: 'EMP-002',
         name: 'Sarah Jenkins',
+        firstDesignation: 'VP of Product & Design',
+        prevDesignation: 'VP of Product & Design',
         designation: 'VP of Product & Design',
         department: 'Product & Design',
         email: 'sarah.jenkins@corp.com',
@@ -211,6 +218,8 @@ class AppDataController extends GetxController {
       const Employee(
         id: 'EMP-003',
         name: 'Marcus Vance',
+        firstDesignation: 'VP of Engineering',
+        prevDesignation: 'VP of Engineering',
         designation: 'VP of Engineering',
         department: 'Engineering',
         email: 'marcus.vance@corp.com',
@@ -233,6 +242,8 @@ class AppDataController extends GetxController {
       const Employee(
         id: 'EMP-004',
         name: 'Sophia Patel',
+        firstDesignation: 'People Operations Lead',
+        prevDesignation: 'People Operations Lead',
         designation: 'People Operations Lead',
         department: 'Human Resources',
         email: 'sophia.patel@corp.com',
@@ -255,6 +266,8 @@ class AppDataController extends GetxController {
       const Employee(
         id: 'EMP-005',
         name: 'Jordan Miller',
+        firstDesignation: 'Senior DevOps Architect',
+        prevDesignation: 'Senior DevOps Architect',
         designation: 'Senior DevOps Architect',
         department: 'Engineering',
         email: 'jordan.miller@corp.com',
@@ -277,6 +290,8 @@ class AppDataController extends GetxController {
       const Employee(
         id: 'EMP-006',
         name: 'Elena Rostova',
+        firstDesignation: 'Lead Frontend Engineer',
+        prevDesignation: 'Lead Frontend Engineer',
         designation: 'Lead Frontend Engineer',
         department: 'Engineering',
         email: 'elena.rostova@corp.com',
@@ -299,6 +314,8 @@ class AppDataController extends GetxController {
       const Employee(
         id: 'EMP-007',
         name: 'David Kim',
+        firstDesignation: 'Senior Data Scientist',
+        prevDesignation: 'Senior Data Scientist',
         designation: 'Senior Data Scientist',
         department: 'Engineering',
         email: 'david.kim@corp.com',
@@ -321,6 +338,8 @@ class AppDataController extends GetxController {
       const Employee(
         id: 'EMP-008',
         name: 'Rachel Adams',
+        firstDesignation: 'Growth Marketing Lead',
+        prevDesignation: 'Growth Marketing Lead',
         designation: 'Growth Marketing Lead',
         department: 'Marketing',
         email: 'rachel.adams@corp.com',
@@ -343,6 +362,8 @@ class AppDataController extends GetxController {
       const Employee(
         id: 'EMP-009',
         name: 'Nathaniel Cole',
+        firstDesignation: 'Security Systems Lead',
+        prevDesignation: 'Security Systems Lead',
         designation: 'Security Systems Lead',
         department: 'Engineering',
         email: 'nathaniel.cole@corp.com',
@@ -365,6 +386,8 @@ class AppDataController extends GetxController {
       const Employee(
         id: 'EMP-010',
         name: 'Chloe Bennett',
+        firstDesignation: 'Senior Brand Specialist',
+        prevDesignation: 'Senior Brand Specialist',
         designation: 'Senior Brand Specialist',
         department: 'Marketing',
         email: 'chloe.bennett@corp.com',
@@ -387,6 +410,8 @@ class AppDataController extends GetxController {
       const Employee(
         id: 'EMP-011',
         name: 'Victor Vance',
+        firstDesignation: 'Talent Acquisition Manager',
+        prevDesignation: 'Talent Acquisition Manager',
         designation: 'Talent Acquisition Manager',
         department: 'Human Resources',
         email: 'victor.vance@corp.com',
@@ -409,6 +434,8 @@ class AppDataController extends GetxController {
       const Employee(
         id: 'EMP-012',
         name: 'Isabella Cruz',
+        firstDesignation: 'Staff Product Manager',
+        prevDesignation: 'Staff Product Manager',
         designation: 'Staff Product Manager',
         department: 'Product & Design',
         email: 'isabella.cruz@corp.com',

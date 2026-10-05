@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../controllers/app_data_controller.dart';
+import '../controllers/leave_controller.dart';
+import '../models/leave_request.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../widgets/common/ui_glass_container.dart';
-import '../widgets/common/custom_buttons.dart';
-import '../widgets/common/custom_inputs.dart';
-import '../widgets/common/custom_dialogs.dart';
 import '../widgets/common/app_avatar.dart';
-import '../models/leave_request.dart';
-import '../controllers/leave_controller.dart';
+import '../widgets/common/custom_buttons.dart';
+import '../widgets/common/custom_dialogs.dart';
+import '../widgets/common/custom_inputs.dart';
+import '../widgets/common/custom_loading.dart';
+import '../widgets/common/ui_glass_container.dart';
 
 class LeaveHistoryScreen extends StatefulWidget {
   const LeaveHistoryScreen({super.key});
@@ -308,7 +310,7 @@ class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
 
     return Obx(() {
       if (leaveController.isLoading.value) {
-        return const Center(child: CircularProgressIndicator());
+        return loadingWidget(AppColors.primary);
       }
 
       final myHistory = leaveController.leaveHistory;
