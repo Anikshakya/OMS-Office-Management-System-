@@ -12,17 +12,14 @@ class LeaveController extends GetxController {
   Future<void> fetchLeaveHistory() async {
     final user = Get.find<UserController>().currentUser.value;
     if (user == null) return;
-
     isLoading.value = true;
     try {
-      final response = await ApiRepo.apiGet(
+      final apiResponse = await ApiRepo.apiGet(
         apiPath: "employeeapp/employee-leaves",
       );
 
-      if (response != null &&
-          response['status'] == "success" &&
-          response['data'] != null) {
-        final List<dynamic> data = response['data'];
+      if (apiResponse != null && apiResponse['status'] == "success" && apiResponse['data'] != null) { 
+        final List<dynamic> data = apiResponse['data'];
         final List<LeaveRequest> fetchedLeaves = data.map((json) {
           return _mapJsonToLeaveRequest(
             json,
@@ -31,7 +28,6 @@ class LeaveController extends GetxController {
             user.department,
           );
         }).toList();
-
         leaveHistory.assignAll(fetchedLeaves);
       }
     } catch (e) {
@@ -89,7 +85,8 @@ class LeaveController extends GetxController {
       leaveType: type,
       startDate: DateTime.tryParse(json['start_date'] ?? '') ?? DateTime.now(),
       endDate: DateTime.tryParse(json['end_date'] ?? '') ?? DateTime.now(),
-      durationDays: double.tryParse(json['total_days']?.toString() ?? '0') ?? 0.0,
+      durationDays:
+          double.tryParse(json['total_days']?.toString() ?? '0') ?? 0.0,
       isHalfDay: json['leave_duration_type'] == 1,
       reason: json['leave_reason'] ?? '',
       status: status,
