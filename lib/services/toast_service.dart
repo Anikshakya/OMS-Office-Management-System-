@@ -10,64 +10,126 @@ class ToastService {
   static void showToast({
     required String message,
     String title = '',
-    Duration duration = const Duration(seconds: 4),
-    Color backgroundColor = const Color(0xFF1E293B),
-    Color textColor = Colors.white,
+    String? headingMessage,
+    bool? isSuccess,
+    bool? isEn,
+    Duration? duration,
+    Color? backgroundColor,
+    Color textColor = Colors.black,
     IconData? icon,
   }) {
     if (message.isEmpty || Get.key.currentState == null) return;
 
+    final heading = headingMessage ?? (title.isEmpty ? null : title);
+    final succeeded = isSuccess ?? icon == Icons.check_circle_rounded;
+    final statusColor = succeeded
+        ? const Color(0xFF34C759)
+        : const Color(0xFFFF3B30);
+    final surfaceColor =
+        backgroundColor ??
+        (Get.isDarkMode ? const Color(0xFF242426) : const Color(0xFFFCFCFD));
+    final foregroundColor = Get.isDarkMode ? Colors.white : textColor;
+
     Get.showSnackbar(
       GetSnackBar(
-        title: title,
-        message: message,
-        icon: icon == null ? null : Icon(icon, color: textColor),
+        title: '',
+        message: '',
+        titleText: Padding(
+          padding: EdgeInsets.only(top: isEn == true ? 1 : 0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon ??
+                      (succeeded
+                          ? Icons.check_rounded
+                          : Icons.info_outline_rounded),
+                  color: statusColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (heading != null) ...[
+                      Text(
+                        heading,
+                        style: TextStyle(
+                          color: foregroundColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                    ],
+                    Text(
+                      message,
+                      style: TextStyle(
+                        color: foregroundColor.withValues(
+                          alpha: heading == null ? 1 : 0.76,
+                        ),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        messageText: const SizedBox.shrink(),
         snackPosition: SnackPosition.TOP,
         snackStyle: SnackStyle.FLOATING,
-        duration: duration,
+        duration: duration ?? Duration(seconds: heading == null ? 3 : 5),
         isDismissible: true,
         dismissDirection: DismissDirection.horizontal,
-        backgroundColor: backgroundColor,
-        borderRadius: 14,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        backgroundColor: surfaceColor,
+        borderColor: statusColor.withValues(alpha: 0.28),
+        borderWidth: 1,
+        borderRadius: 16,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        boxShadows: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: Get.isDarkMode ? 0.24 : 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
     );
   }
 
   static void showAppToast(String title, String message, ToastType type) {
-    final (color, icon) = switch (type) {
-      ToastType.success => (
-        const Color(0xFF16A34A),
-        Icons.check_circle_rounded,
-      ),
-      ToastType.error => (const Color(0xFFDC2626), Icons.error_rounded),
-      ToastType.warning => (const Color(0xFFFF9500), Icons.warning_rounded),
-      ToastType.info => (const Color(0xFF2563EB), Icons.info_rounded),
+    final (succeeded, icon) = switch (type) {
+      ToastType.success => (true, Icons.check_circle),
+      ToastType.error => (false, Icons.info),
+      ToastType.warning => (false, Icons.info),
+      ToastType.info => (false, Icons.info),
     };
 
-    showToast(
-      title: title,
-      message: message,
-      backgroundColor: color,
-      icon: icon,
-    );
+    showToast(title: title, message: message, isSuccess: succeeded, icon: icon);
   }
 
   /// Helper for displaying success notifications.
   static void showSuccessToast(String message) {
-    showToast(
-      message: message,
-      backgroundColor: const Color(0xFF16A34A),
-      textColor: Colors.white,
-    );
+    showToast(message: message, isSuccess: true);
   }
 
   /// Helper for displaying error notifications.
   static void showErrorToast(String message) {
-    showToast(
-      message: message,
-      backgroundColor: const Color(0xFFDC2626),
-      textColor: Colors.white,
-    );
+    showToast(message: message, isSuccess: false);
   }
 }
