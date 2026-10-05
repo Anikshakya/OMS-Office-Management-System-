@@ -13,18 +13,24 @@ Future<DateTime?> showCustomCupertinoDatePicker({
   String dateFormat = 'yyyy-MM-dd',
   bool showTime = false,
   String timeFormat = 'h:mm a',
+  Locale? locale, // Optional explicit locale override (e.g. Locale('ja'))
 }) async {
   final ThemeData theme = Theme.of(context);
   final Color selectedAccentColor = accentColor ?? theme.colorScheme.primary;
-  final DateFormat dateFormatter = DateFormat(dateFormat);
-  final DateFormat timeFormatter = DateFormat(timeFormat);
+
+  // Resolve active locale (passed locale -> context locale -> default fallback)
+  final Locale activeLocale = locale ?? Localizations.localeOf(context);
+  final String localeString = activeLocale.toString();
+
+  final DateFormat dateFormatter = DateFormat(dateFormat, localeString);
+  final DateFormat timeFormatter = DateFormat(timeFormat, localeString);
   final DateTime now = DateTime.now();
 
   final DateFormat combinedFormatter = showTime
-      ? DateFormat('$dateFormat $timeFormat')
+      ? DateFormat('$dateFormat $timeFormat', localeString)
       : dateFormatter;
 
-  // 1. Bounds & normalization
+  // Bounds & normalization
   final DateTime normalizedMinDate = minDate != null
       ? DateTime(minDate.year, minDate.month, minDate.day)
       : DateTime(1900, 1, 1);
@@ -91,11 +97,10 @@ Future<DateTime?> showCustomCupertinoDatePicker({
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 1. TOP HEADER: X button (Left), Title (Center), Checkmark (Right)
+                  // 1. TOP HEADER
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Circular Close (X) Button
                       GestureDetector(
                         onTap: () => Navigator.of(dialogContext).pop(),
                         child: Container(
@@ -116,8 +121,6 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                           ),
                         ),
                       ),
-
-                      // Title
                       Expanded(
                         child: Text(
                           title,
@@ -131,8 +134,6 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-
-                      // Solid Accent Checkmark (✓) Button
                       GestureDetector(
                         onTap: () {
                           controller.text =
@@ -158,11 +159,10 @@ Future<DateTime?> showCustomCupertinoDatePicker({
 
                   const SizedBox(height: 16),
 
-                  // 2. FIXED-WIDTH BUBBLY PILLS (Prevents rightward overflow)
+                  // 2. BUBBLY PILLS (Localized Date & Time String)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Fixed Date Pill
                       GestureDetector(
                         onTap: () {
                           if (isEditingTime) {
@@ -173,7 +173,7 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          width: showTime ? 150 : 180, // Fixed width constraints
+                          width: showTime ? 150 : 180,
                           height: 42,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
@@ -187,7 +187,8 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                             ),
                           ),
                           child: Text(
-                            DateFormat('MMM d, yyyy').format(tempSelectedDate),
+                            DateFormat.yMMMd(localeString)
+                                .format(tempSelectedDate),
                             style: TextStyle(
                               color: !isEditingTime
                                   ? selectedAccentColor
@@ -201,10 +202,8 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                           ),
                         ),
                       ),
-
                       if (showTime) ...[
                         const SizedBox(width: 8),
-                        // Fixed Time Pill
                         GestureDetector(
                           onTap: () {
                             if (!isEditingTime) {
@@ -215,7 +214,7 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                           },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                            width: 110, // Fixed width prevents right overflow
+                            width: 110,
                             height: 42,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
@@ -249,7 +248,7 @@ Future<DateTime?> showCustomCupertinoDatePicker({
 
                   const SizedBox(height: 12),
 
-                  // 3. Dynamic Picker Content View
+                  // 3. DYNAMIC PICKER CONTENT
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
                     child: isEditingTime
@@ -287,7 +286,7 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                           )
                         : SizedBox(
                             key: const ValueKey("CalendarPicker"),
-                            height: 320,
+                            height: 330,
                             child: Theme(
                               data: theme.copyWith(
                                 colorScheme: theme.colorScheme.copyWith(
@@ -300,39 +299,53 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                                   color: selectedAccentColor,
                                   size: 24,
                                 ),
+                                // Fine-tuned DatePickerTheme to fix circle size & text padding
+                                datePickerTheme: DatePickerThemeData(
+                                  dayShape: WidgetStateProperty.all(
+                                    const CircleBorder(),
+                                  ),
+                                  dayStyle: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                                 textTheme: theme.textTheme.copyWith(
                                   titleMedium: TextStyle(
                                     color: textColor,
-                                    fontSize: 20,
+                                    fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
                                   bodyLarge: TextStyle(
                                     color: textColor,
-                                    fontSize: 19,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   bodyMedium: TextStyle(
-                                    color: textColor.withValues(alpha: 0.5),
-                                    fontSize: 13,
+                                    color: textColor.withValues(alpha: 0.6),
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
-                              child: CalendarDatePicker(
-                                initialDate: tempSelectedDate,
-                                firstDate: normalizedMinDate,
-                                lastDate: normalizedMaxDate,
-                                onDateChanged: (DateTime newDate) {
-                                  setDialogState(() {
-                                    tempSelectedDate = DateTime(
-                                      newDate.year,
-                                      newDate.month,
-                                      newDate.day,
-                                      tempSelectedDate.hour,
-                                      tempSelectedDate.minute,
-                                    );
-                                  });
-                                },
+                              child: Localizations.override(
+                                context: context,
+                                locale: activeLocale,
+                                child: CalendarDatePicker(
+                                  initialDate: tempSelectedDate,
+                                  firstDate: normalizedMinDate,
+                                  lastDate: normalizedMaxDate,
+                                  onDateChanged: (DateTime newDate) {
+                                    setDialogState(() {
+                                      tempSelectedDate = DateTime(
+                                        newDate.year,
+                                        newDate.month,
+                                        newDate.day,
+                                        tempSelectedDate.hour,
+                                        tempSelectedDate.minute,
+                                      );
+                                    });
+                                  },
+                                ),
                               ),
                             ),
                           ),
