@@ -310,7 +310,18 @@ class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
 
     return Obx(() {
       if (leaveController.isLoading.value) {
-        return loadingWidget(AppColors.primary);
+        return RefreshIndicator(
+          onRefresh: leaveController.fetchLeaveHistory,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.7,
+                child: loadingWidget(AppColors.primary),
+              ),
+            ],
+          ),
+        );
       }
 
       final myHistory = leaveController.leaveHistory;
@@ -347,45 +358,49 @@ class _LeaveHistoryScreenState extends State<LeaveHistoryScreen> {
         };
       }).toList();
 
-      return SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Row with Year Selector
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    SizedBox(
-                      width: 240,
-                      child: AppSearchField(
-                        controller: _searchController,
-                        hint: 'Search by ID or reason...',
-                        onChanged: (val) {
-                          setState(() => _data.leaveHistorySearchQuery = val);
-                        },
+      return RefreshIndicator(
+        onRefresh: leaveController.fetchLeaveHistory,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Row with Year Selector
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      SizedBox(
+                        width: 240,
+                        child: AppSearchField(
+                          controller: _searchController,
+                          hint: 'Search by ID or reason...',
+                          onChanged: (val) {
+                            setState(() => _data.leaveHistorySearchQuery = val);
+                          },
+                        ),
                       ),
-                    ),
-                    _buildProfessionalYearSelector(availableYears, isDark),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                      _buildProfessionalYearSelector(availableYears, isDark),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
 
-                // Filter Pills Row with Counts
-                _buildFilterPills(yearFiltered, isDark),
+                  // Filter Pills Row with Counts
+                  _buildFilterPills(yearFiltered, isDark),
 
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // Leave Application Cards
-                _buildMonthSection(
-                  'Leaves in $_selectedYear',
-                  filtered,
-                  isDark,
-                ),
-              ],
+                  // Leave Application Cards
+                  _buildMonthSection(
+                    'Leaves in $_selectedYear',
+                    filtered,
+                    isDark,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

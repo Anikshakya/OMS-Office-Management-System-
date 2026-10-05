@@ -34,7 +34,15 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
   @override
   void initState() {
     super.initState();
-    Get.find<UserController>().fetchEmployeeProfile();
+    _refreshProfileData();
+  }
+
+  Future<void> _refreshProfileData() async {
+    final userController = Get.find<UserController>();
+    await Future.wait([
+      userController.fetchEmployeeProfile(),
+      userController.fetchEmployeeFamily(),
+    ]);
   }
 
   void _showEditProfileModal() {
@@ -60,29 +68,51 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     return Obx(() {
       final userController = Get.find<UserController>();
       if (userController.isEmployeeProfileLoading.value) {
-        return loadingWidget(AppColors.primary);
+        return RefreshIndicator(
+          onRefresh: _refreshProfileData,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.7,
+                child: loadingWidget(AppColors.primary),
+              ),
+            ],
+          ),
+        );
       }
       if (userController.employeeProfileError.value.isNotEmpty) {
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  userController.employeeProfileError.value,
-                  textAlign: TextAlign.center,
-                  style: AppTypography.bodyMedium(
-                    isDark,
-                  ).copyWith(color: AppColors.error),
+        return RefreshIndicator(
+          onRefresh: _refreshProfileData,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.7,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          userController.employeeProfileError.value,
+                          textAlign: TextAlign.center,
+                          style: AppTypography.bodyMedium(
+                            isDark,
+                          ).copyWith(color: AppColors.error),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _refreshProfileData,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () => userController.fetchEmployeeProfile(),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       }
@@ -91,55 +121,58 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
         userController.employeeProfileData,
       );
 
-      return SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Hero Profile Header Card
-                _buildProfileHeader(context, isDark, profile),
-
-                const SizedBox(height: 16),
-
-                // Theme Settings Quick Bar (Placed directly in profile!)
-                _buildThemeToggleCard(isDark),
-                const SizedBox(height: 16),
-
-                // Navigation Tabs
-                AppTabBar(
-                  tabs: const [
-                    'Personal',
-                    'Employment',
-                    'Documents',
-                    'Qualifications',
-                    'Experience',
-                  ],
-                  selectedIndex: _activeTab,
-                  onTabChanged: (index) => setState(() => _activeTab = index),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Tab Content Views
-                IndexedStack(
-                  index: _activeTab,
-                  children: [
-                    _buildPersonalInfoTab(context, isDark, profile),
-                    _buildEmploymentTab(context, isDark, profile),
-                    _buildDocumentsTab(context, isDark, _data.currentUser),
-                    _buildQualificationsTab(context, isDark, _data.currentUser),
-                    _buildExperienceTab(context, isDark, _data.currentUser),
-                  ],
-                ),
-              ],
+      return RefreshIndicator(
+        onRefresh: _refreshProfileData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildProfileHeader(context, isDark, profile),
+                  const SizedBox(height: 16),
+                  _buildThemeToggleCard(isDark),
+                  const SizedBox(height: 16),
+                  AppTabBar(
+                    tabs: const [
+                      'Personal',
+                      'Employment',
+                      'Documents',
+                      'Qualifications',
+                      'Experience',
+                      'Family',
+                    ],
+                    selectedIndex: _activeTab,
+                    onTabChanged: (index) => setState(() => _activeTab = index),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildActiveTabContent(context, isDark, profile),
+                ],
+              ),
             ),
           ),
         ),
       );
     });
+  }
+
+  Widget _buildActiveTabContent(
+    BuildContext context,
+    bool isDark,
+    Map<String, dynamic> profile,
+  ) {
+    return switch (_activeTab) {
+      0 => _buildPersonalInfoTab(context, isDark, profile),
+      1 => _buildEmploymentTab(context, isDark, profile),
+      2 => _buildDocumentsTab(context, isDark, _data.currentUser),
+      3 => _buildQualificationsTab(context, isDark, _data.currentUser),
+      4 => _buildExperienceTab(context, isDark, _data.currentUser),
+      5 => _buildFamilyTab(context, isDark),
+      _ => _buildPersonalInfoTab(context, isDark, profile),
+    };
   }
 
   Widget _buildProfileHeader(
@@ -321,6 +354,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
 
   Widget _buildThemeToggleCard(bool isDark) {
     return GlassContainer(
+      width: double.infinity,
       borderRadius: 16,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -376,6 +410,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     Map<String, dynamic> profile,
   ) {
     return GlassContainer(
+      width: double.infinity,
       borderRadius: 16,
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -474,6 +509,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     Map<String, dynamic> profile,
   ) {
     return GlassContainer(
+      width: double.infinity,
       borderRadius: 16,
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -516,9 +552,109 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     );
   }
 
+  Widget _buildFamilyTab(BuildContext context, bool isDark) {
+    final userController = Get.find<UserController>();
+    return Obx(() {
+      if (userController.isEmployeeFamilyLoading.value) {
+        return GlassContainer(
+          width: double.infinity,
+          borderRadius: 16,
+          padding: const EdgeInsets.all(32),
+          child: loadingWidget(AppColors.primary),
+        );
+      }
+
+      if (userController.employeeFamilyError.value.isNotEmpty) {
+        return GlassContainer(
+          width: double.infinity,
+          borderRadius: 16,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Text(
+                userController.employeeFamilyError.value,
+                textAlign: TextAlign.center,
+                style: AppTypography.bodyMedium(
+                  isDark,
+                ).copyWith(color: AppColors.error),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: userController.fetchEmployeeFamily,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        );
+      }
+
+      final family = Map<String, dynamic>.from(
+        userController.employeeFamilyData,
+      );
+      return GlassContainer(
+        width: double.infinity,
+        borderRadius: 16,
+        padding: const EdgeInsets.all(16),
+        child: _buildDetailGrid([
+          _DetailItem(
+            'Employee ID *',
+            _profileValue(family, 'employee_id'),
+            Icons.badge_outlined,
+          ),
+          _DetailItem(
+            'Spouse Name',
+            _profileValue(family, 'spouse_name'),
+            Icons.person_outline_rounded,
+          ),
+          _DetailItem(
+            'Spouse Name (Local)',
+            _profileValue(family, 'spouse_name_locale'),
+            Icons.translate_rounded,
+          ),
+          _DetailItem(
+            'Spouse Contact Number',
+            _profileValue(family, 'spouse_contact_num'),
+            Icons.phone_outlined,
+          ),
+          _DetailItem(
+            'Father Name *',
+            _profileValue(family, 'father_name'),
+            Icons.person_outline_rounded,
+          ),
+          _DetailItem(
+            'Father Name (Local) *',
+            _profileValue(family, 'father_name_locale'),
+            Icons.translate_rounded,
+          ),
+          _DetailItem(
+            'Mother Name *',
+            _profileValue(family, 'mother_name'),
+            Icons.person_outline_rounded,
+          ),
+          _DetailItem(
+            'Mother Name (Local) *',
+            _profileValue(family, 'mother_name_locale'),
+            Icons.translate_rounded,
+          ),
+          _DetailItem(
+            'Grandfather Name *',
+            _profileValue(family, 'grandfather_name'),
+            Icons.person_outline_rounded,
+          ),
+          _DetailItem(
+            'Grandmother Name *',
+            _profileValue(family, 'grandmother_name'),
+            Icons.person_outline_rounded,
+          ),
+        ], isDark),
+      );
+    });
+  }
+
   Widget _buildDocumentsTab(BuildContext context, bool isDark, Employee emp) {
     if (emp.documents.isEmpty) {
       return GlassContainer(
+        width: double.infinity,
         borderRadius: 16,
         padding: const EdgeInsets.all(24),
         child: Center(
@@ -535,6 +671,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: GlassContainer(
+            width: double.infinity,
             borderRadius: 14,
             padding: const EdgeInsets.all(14),
             child: Row(
@@ -600,6 +737,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
   ) {
     if (emp.qualifications.isEmpty) {
       return GlassContainer(
+        width: double.infinity,
         borderRadius: 16,
         padding: const EdgeInsets.all(24),
         child: Center(
@@ -616,6 +754,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: GlassContainer(
+            width: double.infinity,
             borderRadius: 14,
             padding: const EdgeInsets.all(14),
             child: Row(
@@ -662,6 +801,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
   Widget _buildExperienceTab(BuildContext context, bool isDark, Employee emp) {
     if (emp.experiences.isEmpty) {
       return GlassContainer(
+        width: double.infinity,
         borderRadius: 16,
         padding: const EdgeInsets.all(24),
         child: Center(
@@ -678,6 +818,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: GlassContainer(
+            width: double.infinity,
             borderRadius: 14,
             padding: const EdgeInsets.all(14),
             child: Row(
@@ -803,6 +944,7 @@ class _LogoutConfirmationDialog extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
         child: GlassContainer(
+          width: double.infinity,
           borderRadius: 20,
           padding: const EdgeInsets.all(24),
           child: Obx(() {

@@ -11,6 +11,9 @@ class UserController extends GetxController {
   final RxMap<String, dynamic> employeeProfileData = <String, dynamic>{}.obs;
   final RxBool isEmployeeProfileLoading = false.obs;
   final RxString employeeProfileError = ''.obs;
+  final RxMap<String, dynamic> employeeFamilyData = <String, dynamic>{}.obs;
+  final RxBool isEmployeeFamilyLoading = false.obs;
+  final RxString employeeFamilyError = ''.obs;
   final box = GetStorage();
 
   Future<void> fetchEmployeeProfile() async {
@@ -49,15 +52,7 @@ class UserController extends GetxController {
           dob: _profileValue(profile, 'dob_ad') ?? user.dob,
           address: _profileValue(profile, 'address_permanent') ?? user.address,
         );
-      } 
-      // else {
-      //   employeeProfileError.value = apiResponse is Map
-      //       ? apiResponse['message']?.toString() ??
-      //             'Unable to load employee profile. Please try again.'
-      //       : 'Unable to load employee profile. Please try again.';
-      //   log('Unable to load employee profile: $apiResponse');
-      //   ToastService.showErrorToast(employeeProfileError.value);
-      // }
+      }
     } catch (error, stackTrace) {
       employeeProfileError.value =
           'Unable to load employee profile. Please try again.';
@@ -65,6 +60,49 @@ class UserController extends GetxController {
       ToastService.showErrorToast(employeeProfileError.value);
     } finally {
       isEmployeeProfileLoading.value = false;
+    }
+  }
+
+  Future<void> fetchEmployeeFamily() async {
+    if (currentUser.value == null) return;
+
+    isEmployeeFamilyLoading.value = true;
+    employeeFamilyError.value = '';
+    try {
+      final apiResponse = await ApiRepo.apiGet(
+        apiPath: 'employeeapp/employee-families/{id}',
+        showToast: true
+      );
+      if (apiResponse is Map &&
+          apiResponse['success'] == true &&
+          apiResponse['data'] is List) {
+        final familyRecords = apiResponse['data'] as List;
+        if (familyRecords.isEmpty) {
+          employeeFamilyData.clear();
+        } else if (familyRecords.first is Map) {
+          employeeFamilyData.assignAll(
+            Map<String, dynamic>.from(familyRecords.first as Map),
+          );
+        } else {
+          throw const FormatException(
+            'Employee family response must contain an object.',
+          );
+        }
+      } else {
+        employeeFamilyError.value = apiResponse is Map
+            ? apiResponse['message']?.toString() ??
+                  'Unable to load family information. Please try again.'
+            : 'Unable to load family information. Please try again.';
+        log('Unable to load employee family: $apiResponse');
+        ToastService.showErrorToast(employeeFamilyError.value);
+      }
+    } catch (error, stackTrace) {
+      employeeFamilyError.value =
+          'Unable to load family information. Please try again.';
+      log('Error fetching employee family: $error', stackTrace: stackTrace);
+      ToastService.showErrorToast(employeeFamilyError.value);
+    } finally {
+      isEmployeeFamilyLoading.value = false;
     }
   }
 
@@ -92,6 +130,8 @@ class UserController extends GetxController {
   void setCurrentUserFromApi(Map<String, dynamic> userData) {
     employeeProfileData.clear();
     employeeProfileError.value = '';
+    employeeFamilyData.clear();
+    employeeFamilyError.value = '';
     box.write('userData', userData);
     if (currentUser.value != null) {
       setCurrentUser(currentUser.value!);
