@@ -99,7 +99,7 @@ Future<DateTime?> showCustomCupertinoDatePicker({
         child: StatefulBuilder(
           builder: (context, setDialogState) {
             return Container(
-              width: 360,
+              width: 380, // Expanded dialog width for larger touch targets
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -261,7 +261,7 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                     child: isEditingTime
                         ? SizedBox(
                             key: const ValueKey("TimePicker"),
-                            height: 360,
+                            height: 380,
                             child: CupertinoTheme(
                               data: CupertinoThemeData(
                                 brightness: theme.brightness,
@@ -293,65 +293,68 @@ Future<DateTime?> showCustomCupertinoDatePicker({
                           )
                         : SizedBox(
                             key: const ValueKey("CalendarPicker"),
-                            height: 360,
-                            child: Theme(
-                              data: theme.copyWith(
-                                visualDensity: VisualDensity.comfortable,
-                                colorScheme: theme.colorScheme.copyWith(
-                                  primary: selectedAccentColor,
-                                  onPrimary: theme.colorScheme.onPrimary,
-                                  surface: dialogBackgroundColor,
-                                  onSurface: textColor,
+                            height: 380, // Expanded height allowance
+                            child: Transform.scale(
+                              scale: 1.08, // Scales up the calendar grid and circle highlights cleanly
+                              child: Theme(
+                                data: theme.copyWith(
+                                  visualDensity: VisualDensity.compact,
+                                  colorScheme: theme.colorScheme.copyWith(
+                                    primary: selectedAccentColor,
+                                    onPrimary: theme.colorScheme.onPrimary,
+                                    surface: dialogBackgroundColor,
+                                    onSurface: textColor,
+                                  ),
+                                  iconTheme: IconThemeData(
+                                    color: selectedAccentColor,
+                                    size: 24,
+                                  ),
+                                  datePickerTheme: DatePickerThemeData(
+                                    dayShape: WidgetStateProperty.all(
+                                      const CircleBorder(),
+                                    ),
+                                    dayStyle: const TextStyle(
+                                      fontSize: 18, // Clean 18px font scaled up to ~20px visually
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  textTheme: theme.textTheme.copyWith(
+                                    titleMedium: TextStyle(
+                                      color: textColor,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    bodyLarge: TextStyle(
+                                      color: textColor,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    bodyMedium: TextStyle(
+                                      color: textColor.withValues(alpha: 0.6),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
-                                iconTheme: IconThemeData(
-                                  color: selectedAccentColor,
-                                  size: 24,
-                                ),
-                                datePickerTheme: DatePickerThemeData(
-                                  dayShape: WidgetStateProperty.all(
-                                    const CircleBorder(),
+                                child: Localizations.override(
+                                  context: context,
+                                  locale: activeLocale,
+                                  child: CalendarDatePicker(
+                                    initialDate: tempSelectedDate,
+                                    firstDate: normalizedMinDate,
+                                    lastDate: normalizedMaxDate,
+                                    onDateChanged: (DateTime newDate) {
+                                      setDialogState(() {
+                                        tempSelectedDate = DateTime(
+                                          newDate.year,
+                                          newDate.month,
+                                          newDate.day,
+                                          tempSelectedDate.hour,
+                                          tempSelectedDate.minute,
+                                        );
+                                      });
+                                    },
                                   ),
-                                  dayStyle: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                textTheme: theme.textTheme.copyWith(
-                                  titleMedium: TextStyle(
-                                    color: textColor,
-                                    fontSize: 19,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  bodyLarge: TextStyle(
-                                    color: textColor,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  bodyMedium: TextStyle(
-                                    color: textColor.withValues(alpha: 0.6),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              child: Localizations.override(
-                                context: context,
-                                locale: activeLocale,
-                                child: CalendarDatePicker(
-                                  initialDate: tempSelectedDate,
-                                  firstDate: normalizedMinDate,
-                                  lastDate: normalizedMaxDate,
-                                  onDateChanged: (DateTime newDate) {
-                                    setDialogState(() {
-                                      tempSelectedDate = DateTime(
-                                        newDate.year,
-                                        newDate.month,
-                                        newDate.day,
-                                        tempSelectedDate.hour,
-                                        tempSelectedDate.minute,
-                                      );
-                                    });
-                                  },
                                 ),
                               ),
                             ),
