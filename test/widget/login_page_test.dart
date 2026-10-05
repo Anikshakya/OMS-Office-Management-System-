@@ -7,8 +7,8 @@ void main() {
   testWidgets('LoginPage rendering and validation test', (WidgetTester tester) async {
     await tester.pumpWidget(const GetMaterialApp(home: LoginPage()));
 
-    expect(find.text('Welcome Back!'), findsOneWidget);
-    expect(find.text('Sign in to continue to  OMS'), findsOneWidget);
+    expect(find.text('Welcome Back'), findsOneWidget);
+    expect(find.text('Sign in to your OMS workspace'), findsOneWidget);
     
     // Find text fields
     final textFields = find.byType(TextFormField);
@@ -17,6 +17,11 @@ void main() {
     // Find Login button
     final loginButton = find.text('Sign In');
     expect(loginButton, findsOneWidget);
+
+    // Clear prefilled fields
+    await tester.enterText(textFields.first, '');
+    await tester.enterText(textFields.last, '');
+    await tester.pumpAndSettle();
 
     // Tap login without entering data
     await tester.tap(loginButton);

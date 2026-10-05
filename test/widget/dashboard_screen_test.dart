@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oms/screens/dashboard_screen.dart';
+import 'package:oms/screens/dashboard.dart';
 import 'package:oms/controllers/app_data_controller.dart';
 import 'package:get/get.dart';
 import 'package:oms/controllers/user_controller.dart';
@@ -36,7 +36,7 @@ void main() {
 
     await tester.pumpWidget(
       const GetMaterialApp(
-        home: Scaffold(body: DashboardScreen()),
+        home: Dashboard(),
       ),
     );
 
@@ -55,7 +55,7 @@ void main() {
     );
 
     // Verify Apply Leave button
-    final applyLeaveButton = find.widgetWithText(ElevatedButton, 'Apply Leave');
+    final applyLeaveButton = find.ancestor(of: find.text('Apply Leave'), matching: find.byType(InkWell));
     expect(applyLeaveButton, findsOneWidget);
 
     // Apply Leave opens as a separate route, not a home tab.
@@ -66,12 +66,11 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify Appraisal button
-    final appraisalButton = find.widgetWithText(OutlinedButton, 'Appraisal');
-    expect(appraisalButton, findsOneWidget);
+    expect(find.text('View Appraisal'), findsOneWidget);
 
-    await tester.tap(appraisalButton);
+    await tester.tap(find.text('View Appraisal'));
     await tester.pumpAndSettle();
-    expect(find.text('Appraisal'), findsWidgets); // Appraisalscreen title or something
+    expect(find.text('Submit Appraisal'), findsWidgets); // Appraisalscreen title or something
     Get.back();
     await tester.pumpAndSettle();
 
