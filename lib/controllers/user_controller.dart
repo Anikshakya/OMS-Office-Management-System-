@@ -10,11 +10,131 @@ class UserController extends GetxController {
   final Rx<Employee?> currentUser = Rx<Employee?>(null);
   final RxMap<String, dynamic> employeeProfileData = <String, dynamic>{}.obs;
   final RxBool isEmployeeProfileLoading = false.obs;
+  final RxBool isEmployeeProfileSaving = false.obs;
   final RxString employeeProfileError = ''.obs;
   final RxMap<String, dynamic> employeeFamilyData = <String, dynamic>{}.obs;
   final RxBool isEmployeeFamilyLoading = false.obs;
+  final RxBool isEmployeeFamilySaving = false.obs;
   final RxString employeeFamilyError = ''.obs;
   final box = GetStorage();
+
+  Future<void> updateEmployeeProfile({
+    required String employeeName,
+    required String employeeCode,
+    required String employeeNameLocale,
+    required String gender,
+    required String zoneId,
+    required String districtId,
+    required String provinceId,
+    required String municipalityId,
+    required String addressPermanent,
+    required String addressCurrent,
+    required String email,
+    required String emailPersonal,
+    required String phone,
+    required String phoneSecondary,
+    required String dobAd,
+    required String dobBs,
+    required String maritalStatus,
+    required String dateJoined,
+    required String dateResigned,
+  }) async {
+    if (isEmployeeProfileSaving.value) return;
+
+    final parsedZoneId = int.tryParse(zoneId);
+    final parsedDistrictId = int.tryParse(districtId);
+    final parsedProvinceId = int.tryParse(provinceId);
+    final parsedMunicipalityId = int.tryParse(municipalityId);
+    if (parsedZoneId == null ||
+        parsedDistrictId == null ||
+        parsedProvinceId == null ||
+        parsedMunicipalityId == null) {
+      ToastService.showErrorToast(
+        'Zone, district, province, and municipality IDs must be valid numbers.',
+      );
+      return;
+    }
+
+    final genderCode = switch (gender) {
+      'Male' => 'm',
+      'Female' => 'f',
+      'Other' => 'o',
+      'Not Specified' => 'n',
+      _ => '',
+    };
+    final maritalStatusCode = switch (maritalStatus) {
+      'Unmarried' => '1',
+      'Married' => '2',
+      'Not Specified' => '3',
+      _ => '',
+    };
+    if (genderCode.isEmpty || maritalStatusCode.isEmpty) {
+      ToastService.showErrorToast(
+        'Select a valid gender and marital status.',
+      );
+      return;
+    }
+
+    final activeValue = int.tryParse(
+      employeeProfileData['active']?.toString() ?? '',
+    );
+    final activeText =
+        employeeProfileData['active_text']?.toString().toLowerCase() ?? '';
+    final active =
+        activeValue ??
+        (employeeProfileData['active'] == false ||
+                activeText == 'no' ||
+                activeText == 'inactive'
+            ? 2
+            : 1);
+    final payload = <String, dynamic>{
+      '_method': 'PATCH',
+      'employee_name': employeeName,
+      'employee_code': employeeCode,
+      'employee_name_locale': employeeNameLocale,
+      'gender': genderCode,
+      'zone_id': parsedZoneId,
+      'district_id': parsedDistrictId,
+      'province_id': parsedProvinceId,
+      'municipality_id': parsedMunicipalityId,
+      'address_permanent': addressPermanent,
+      'address_current': addressCurrent,
+      'email': email,
+      'email_per': emailPersonal,
+      'phone': phone,
+      'phone_2': phoneSecondary,
+      'dob_ad': dobAd,
+      'dob_bs': dobBs,
+      'marital_status': maritalStatusCode,
+      'date_joined': dateJoined,
+      'date_resigned': dateResigned,
+      'remarks': employeeProfileData['remarks']?.toString() ?? '',
+      'active': active,
+    };
+
+    isEmployeeProfileSaving.value = true;
+    try {
+      final response = await ApiRepo.apiPost(
+        apiPath: 'employeeapp/employees/{id}',
+        data: payload,
+        showToast: true,
+      );
+      if (response is Map && response['status'] == 'success') {
+        final updatedProfile = Map<String, dynamic>.from(payload)
+          ..remove('_method');
+        employeeProfileData.addAll(updatedProfile);
+        await fetchEmployeeProfile();
+        Get.back();
+      }
+    } catch (error, stackTrace) {
+      log('Error updating employee profile: $error', stackTrace: stackTrace);
+      ToastService.showErrorToast(
+        'Unable to update employee profile. Please try again.',
+      );
+    } finally {
+      isEmployeeProfileSaving.value = false;
+    }
+  }
 
   Future<void> fetchEmployeeProfile() async {
     final user = currentUser.value;
@@ -94,6 +214,61 @@ class UserController extends GetxController {
       ToastService.showErrorToast(employeeFamilyError.value);
     } finally {
       isEmployeeFamilyLoading.value = false;
+    }
+  }
+
+  Future<void> updateEmployeeFamily({
+    required String employeeId,
+    required String spouseName,
+    required String spouseNameLocale,
+    required String spouseContactNum,
+    required String fatherName,
+    required String fatherNameLocale,
+    required String motherName,
+    required String motherNameLocale,
+    required String grandfatherName,
+    required String grandmotherName,
+  }) async {
+    if (isEmployeeFamilySaving.value) return;
+
+    final parsedEmployeeId = int.tryParse(employeeId);
+    if (parsedEmployeeId == null) {
+      ToastService.showErrorToast('Employee ID must be a valid number.');
+      return;
+    }
+
+    final payload = <String, dynamic>{
+      'employee_id': parsedEmployeeId,
+      'spouse_name': spouseName,
+      'spouse_name_locale': spouseNameLocale,
+      'spouse_contact_num': spouseContactNum,
+      'father_name': fatherName,
+      'father_name_locale': fatherNameLocale,
+      'mother_name': motherName,
+      'mother_name_locale': motherNameLocale,
+      'grandfather_name': grandfatherName,
+      'grandmother_name': grandmotherName,
+    };
+
+    isEmployeeFamilySaving.value = true;
+    try {
+      final response = await ApiRepo.apiPost(
+        apiPath: 'employeeapp/employee-families',
+        data: payload,
+        showToast: false,
+      );
+      if (response is Map && response['status'] == 'success') {
+        employeeFamilyData.addAll(payload);
+        await fetchEmployeeFamily();
+        Get.back();
+      }
+    } catch (error, stackTrace) {
+      log('Error updating employee family: $error', stackTrace: stackTrace);
+      ToastService.showErrorToast(
+        'Unable to update family information. Please try again.',
+      );
+    } finally {
+      isEmployeeFamilySaving.value = false;
     }
   }
 
