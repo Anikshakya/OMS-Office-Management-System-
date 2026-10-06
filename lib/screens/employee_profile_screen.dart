@@ -2,18 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:oms/controllers/auth_controller.dart';
 
-import '../controllers/app_controller.dart';
-import '../controllers/app_data_controller.dart';
 import '../controllers/theme_controller.dart';
 import '../controllers/user_controller.dart';
-import '../models/employee.dart';
-import '../models/toast_notification.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common/app_avatar.dart';
 import '../widgets/common/custom_buttons.dart';
 import '../widgets/common/custom_loading.dart';
-import '../widgets/common/custom_tabs.dart';
 import '../widgets/common/ui_glass_container.dart';
 import 'employee_profile_edit_screen.dart';
 
@@ -25,11 +20,14 @@ class EmployeeProfileScreen extends StatefulWidget {
 }
 
 class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
-  AppDataController get _data => Get.find<AppDataController>();
-  AppController get _appController => Get.find<AppController>();
+  // AppDataController get _data => Get.find<AppDataController>();
+  // AppController get _appController => Get.find<AppController>();
   ThemeController get _themeController => Get.find<ThemeController>();
 
-  int _activeTab = 0;
+  bool _notificationsEnabled = true;
+  bool _biometricsEnabled = false;
+  String _selectedLanguage = 'Eng';
+  String _selectedDateFormat = 'BS';
 
   @override
   void initState() {
@@ -63,6 +61,132 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
       barrierDismissible: false,
       builder: (context) =>
           _LogoutConfirmationDialog(authController: authController),
+    );
+  }
+
+  void _showLanguagePicker(BuildContext context, bool isDark) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.language_rounded),
+                title: const Text('English (Eng)'),
+                trailing: _selectedLanguage == 'Eng'
+                    ? const Icon(Icons.check_rounded, color: Color(0xFFE53935))
+                    : null,
+                onTap: () {
+                  setState(() => _selectedLanguage = 'Eng');
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.translate_rounded),
+                title: const Text('Nepali (Nep)'),
+                trailing: _selectedLanguage == 'Nep'
+                    ? const Icon(Icons.check_rounded, color: Color(0xFFE53935))
+                    : null,
+                onTap: () {
+                  setState(() => _selectedLanguage = 'Nep');
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDateFormatPicker(BuildContext context, bool isDark) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_month_rounded),
+                title: const Text('Bikram Sambat (BS)'),
+                trailing: _selectedDateFormat == 'BS'
+                    ? const Icon(Icons.check_rounded, color: Color(0xFFE53935))
+                    : null,
+                onTap: () {
+                  setState(() => _selectedDateFormat = 'BS');
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_today_rounded),
+                title: const Text('Anno Domini (AD)'),
+                trailing: _selectedDateFormat == 'AD'
+                    ? const Icon(Icons.check_rounded, color: Color(0xFFE53935))
+                    : null,
+                onTap: () {
+                  setState(() => _selectedDateFormat = 'AD');
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAboutUsDialog(BuildContext context, bool isDark) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.business_rounded, color: Color(0xFFE53935)),
+            const SizedBox(width: 10),
+            const Text('About Us'),
+          ],
+        ),
+        content: const Text(
+          'Office Management System (OMS)\nVersion 2.4.0\n\nEmpowering corporate productivity with modern employee management tools.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -136,24 +260,13 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 1. Profile Header
                   _buildProfileHeader(context, isDark, profile),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   _buildThemeToggleCard(isDark),
-                  const SizedBox(height: 16),
-                  AppTabBar(
-                    tabs: const [
-                      'Personal',
-                      'Employment',
-                      'Documents',
-                      'Qualifications',
-                      'Experience',
-                      'Family',
-                    ],
-                    selectedIndex: _activeTab,
-                    onTabChanged: (index) => setState(() => _activeTab = index),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildActiveTabContent(context, isDark, profile),
+                  const SizedBox(height: 20),
+                  // 2. Settings Menu Card matching screenshot design
+                  _buildSettingsCard(context, isDark),
                 ],
               ),
             ),
@@ -163,20 +276,151 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     });
   }
 
-  Widget _buildActiveTabContent(
-    BuildContext context,
-    bool isDark,
-    Map<String, dynamic> profile,
-  ) {
-    return switch (_activeTab) {
-      0 => _buildPersonalInfoTab(context, isDark, profile),
-      1 => _buildEmploymentTab(context, isDark, profile),
-      2 => _buildDocumentsTab(context, isDark, _data.currentUser),
-      3 => _buildQualificationsTab(context, isDark, _data.currentUser),
-      4 => _buildExperienceTab(context, isDark, _data.currentUser),
-      5 => _buildFamilyTab(context, isDark),
-      _ => _buildPersonalInfoTab(context, isDark, profile),
-    };
+  Widget _buildSettingsCard(BuildContext context, bool isDark) {
+    return GlassContainer(
+      width: double.infinity,
+      borderRadius: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        children: [
+          // 1. Notification
+          _buildSettingSwitchRow(
+            icon: Icons.notifications_none_rounded,
+            label: 'Notification',
+            value: _notificationsEnabled,
+            onChanged: (val) => setState(() => _notificationsEnabled = val),
+            isDark: isDark,
+          ),
+          Divider(
+            height: 1,
+            color: isDark ? Colors.white10 : AppColors.borderLight,
+          ),
+          // 3. Biometric
+          _buildSettingSwitchRow(
+            icon: Icons.fingerprint_rounded,
+            label: 'Biometric',
+            value: _biometricsEnabled,
+            onChanged: (val) => setState(() => _biometricsEnabled = val),
+            isDark: isDark,
+          ),
+          Divider(
+            height: 1,
+            color: isDark ? Colors.white10 : AppColors.borderLight,
+          ),
+          // 4. Language (Eng)
+          _buildSettingSelectRow(
+            icon: Icons.language_rounded,
+            label: 'Language ($_selectedLanguage)',
+            onTap: () => _showLanguagePicker(context, isDark),
+            isDark: isDark,
+          ),
+          Divider(
+            height: 1,
+            color: isDark ? Colors.white10 : AppColors.borderLight,
+          ),
+          // 5. Date Preference (BS)
+          _buildSettingSelectRow(
+            icon: Icons.calendar_month_rounded,
+            label: 'Date Preference ($_selectedDateFormat)',
+            onTap: () => _showDateFormatPicker(context, isDark),
+            isDark: isDark,
+          ),
+          Divider(
+            height: 1,
+            color: isDark ? Colors.white10 : AppColors.borderLight,
+          ),
+          // 6. About Us
+          _buildSettingSelectRow(
+            icon: Icons.info_outline_rounded,
+            label: 'About Us',
+            onTap: () => _showAboutUsDialog(context, isDark),
+            isDark: isDark,
+            showChevron: false,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingSwitchRow({
+    required IconData icon,
+    required String label,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    required bool isDark,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 22,
+            color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            activeTrackColor: AppColors.primary,
+            // ignore: deprecated_member_use
+            activeColor: Colors.white,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingSelectRow({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required bool isDark,
+    bool showChevron = true,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 22,
+              color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (showChevron)
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 20,
+                color: isDark ? Colors.white54 : AppColors.textMutedLight,
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildProfileHeader(
@@ -327,11 +571,6 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     );
   }
 
-  String _profileValue(Map<String, dynamic> profile, String key) {
-    final value = profile[key]?.toString().trim();
-    return value == null || value.isEmpty ? 'Not provided' : value;
-  }
-
   Widget _buildThemeToggleCard(bool isDark) {
     return GlassContainer(
       width: double.infinity,
@@ -384,528 +623,9 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     );
   }
 
-  Widget _buildPersonalInfoTab(
-    BuildContext context,
-    bool isDark,
-    Map<String, dynamic> profile,
-  ) {
-    return GlassContainer(
-      width: double.infinity,
-      borderRadius: 16,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildDetailGrid([
-            _DetailItem(
-              'Full Name',
-              _profileValue(profile, 'employee_name'),
-              Icons.person_outline_rounded,
-            ),
-            _DetailItem(
-              'Name (Local)',
-              _profileValue(profile, 'employee_name_locale'),
-              Icons.translate_rounded,
-            ),
-            _DetailItem(
-              'Gender',
-              _profileValue(profile, 'gender_text'),
-              Icons.people_outline_rounded,
-            ),
-            _DetailItem(
-              'Marital Status',
-              _profileValue(profile, 'marital_status_text'),
-              Icons.favorite_border_rounded,
-            ),
-            _DetailItem(
-              'Email Address',
-              _profileValue(profile, 'email'),
-              Icons.email_outlined,
-            ),
-            _DetailItem(
-              'Personal Email',
-              _profileValue(profile, 'email_per'),
-              Icons.alternate_email_rounded,
-            ),
-            _DetailItem(
-              'Phone Number',
-              _profileValue(profile, 'phone'),
-              Icons.phone_outlined,
-            ),
-            _DetailItem(
-              'Secondary Phone',
-              _profileValue(profile, 'phone_2'),
-              Icons.phone_android_outlined,
-            ),
-            _DetailItem(
-              'Date of Birth (AD)',
-              _profileValue(profile, 'dob_ad'),
-              Icons.cake_outlined,
-            ),
-            _DetailItem(
-              'Date of Birth (BS)',
-              _profileValue(profile, 'dob_bs'),
-              Icons.calendar_month_outlined,
-            ),
-            _DetailItem(
-              'Current Address',
-              _profileValue(profile, 'address_current'),
-              Icons.location_on_outlined,
-            ),
-            _DetailItem(
-              'Permanent Address',
-              _profileValue(profile, 'address_permanent'),
-              Icons.home_outlined,
-            ),
-            _DetailItem(
-              'Municipality',
-              _profileValue(profile, 'municipality_name'),
-              Icons.location_city_outlined,
-            ),
-            _DetailItem(
-              'District',
-              _profileValue(profile, 'district_name'),
-              Icons.map_outlined,
-            ),
-            _DetailItem(
-              'Province',
-              _profileValue(profile, 'province_name'),
-              Icons.public_outlined,
-            ),
-            _DetailItem(
-              'Zone',
-              _profileValue(profile, 'zone_name'),
-              Icons.explore_outlined,
-            ),
-          ], isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmploymentTab(
-    BuildContext context,
-    bool isDark,
-    Map<String, dynamic> profile,
-  ) {
-    return GlassContainer(
-      width: double.infinity,
-      borderRadius: 16,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildDetailGrid([
-            _DetailItem(
-              'Employee Code',
-              _profileValue(profile, 'employee_code'),
-              Icons.badge_outlined,
-            ),
-            _DetailItem(
-              'First Designation',
-              _profileValue(profile, 'first_designation_name'),
-              Icons.work_outline_rounded,
-            ),
-            _DetailItem(
-              'Previous Designation',
-              _profileValue(profile, 'previous_designation_name'),
-              Icons.work_outline_rounded,
-            ),
-            _DetailItem(
-              'Current Designation',
-              _profileValue(profile, 'current_designation_name'),
-              Icons.work_outline_rounded,
-            ),
-            _DetailItem(
-              'Joining Date',
-              _profileValue(profile, 'date_joined'),
-              Icons.event_available_outlined,
-            ),
-            _DetailItem(
-              'Reporting Manager',
-              _profileValue(profile, 'supervisor_ids_text'),
-              Icons.supervisor_account_outlined,
-            ),
-          ], isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFamilyTab(BuildContext context, bool isDark) {
-    final userController = Get.find<UserController>();
-    return Obx(() {
-      if (userController.isEmployeeFamilyLoading.value) {
-        return GlassContainer(
-          width: double.infinity,
-          borderRadius: 16,
-          padding: const EdgeInsets.all(32),
-          child: loadingWidget(AppColors.primary),
-        );
-      }
-
-      if (userController.employeeFamilyError.value.isNotEmpty) {
-        return GlassContainer(
-          width: double.infinity,
-          borderRadius: 16,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Text(
-                userController.employeeFamilyError.value,
-                textAlign: TextAlign.center,
-                style: AppTypography.bodyMedium(
-                  isDark,
-                ).copyWith(color: AppColors.error),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: userController.fetchEmployeeFamily,
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        );
-      }
-
-      final family = Map<String, dynamic>.from(
-        userController.employeeFamilyData,
-      );
-      return GlassContainer(
-        width: double.infinity,
-        borderRadius: 16,
-        padding: const EdgeInsets.all(16),
-        child: _buildDetailGrid([
-          _DetailItem(
-            'Employee ID *',
-            _profileValue(family, 'employee_id'),
-            Icons.badge_outlined,
-          ),
-          _DetailItem(
-            'Spouse Name',
-            _profileValue(family, 'spouse_name'),
-            Icons.person_outline_rounded,
-          ),
-          _DetailItem(
-            'Spouse Name (Local)',
-            _profileValue(family, 'spouse_name_locale'),
-            Icons.translate_rounded,
-          ),
-          _DetailItem(
-            'Spouse Contact Number',
-            _profileValue(family, 'spouse_contact_num'),
-            Icons.phone_outlined,
-          ),
-          _DetailItem(
-            'Father Name *',
-            _profileValue(family, 'father_name'),
-            Icons.person_outline_rounded,
-          ),
-          _DetailItem(
-            'Father Name (Local) *',
-            _profileValue(family, 'father_name_locale'),
-            Icons.translate_rounded,
-          ),
-          _DetailItem(
-            'Mother Name *',
-            _profileValue(family, 'mother_name'),
-            Icons.person_outline_rounded,
-          ),
-          _DetailItem(
-            'Mother Name (Local) *',
-            _profileValue(family, 'mother_name_locale'),
-            Icons.translate_rounded,
-          ),
-          _DetailItem(
-            'Grandfather Name *',
-            _profileValue(family, 'grandfather_name'),
-            Icons.person_outline_rounded,
-          ),
-          _DetailItem(
-            'Grandmother Name *',
-            _profileValue(family, 'grandmother_name'),
-            Icons.person_outline_rounded,
-          ),
-        ], isDark),
-      );
-    });
-  }
-
-  Widget _buildDocumentsTab(BuildContext context, bool isDark, Employee emp) {
-    if (emp.documents.isEmpty) {
-      return GlassContainer(
-        width: double.infinity,
-        borderRadius: 16,
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Text(
-            'No documents uploaded for this employee.',
-            style: AppTypography.bodyMedium(isDark),
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: emp.documents.map((doc) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: GlassContainer(
-            width: double.infinity,
-            borderRadius: 14,
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.picture_as_pdf_rounded,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        doc.title,
-                        style: AppTypography.titleMedium(
-                          isDark,
-                        ).copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${doc.fileName} • ${doc.fileSize}',
-                        style: AppTypography.caption(isDark),
-                      ),
-                    ],
-                  ),
-                ),
-                AppButton.outlined(
-                  label: 'View',
-                  icon: Icons.visibility_outlined,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  onPressed: () {
-                    _appController.showToast(
-                      'Document Viewer',
-                      'Opening ${doc.title}...',
-                      ToastType.info,
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildQualificationsTab(
-    BuildContext context,
-    bool isDark,
-    Employee emp,
-  ) {
-    if (emp.qualifications.isEmpty) {
-      return GlassContainer(
-        width: double.infinity,
-        borderRadius: 16,
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Text(
-            'No qualifications listed.',
-            style: AppTypography.bodyMedium(isDark),
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: emp.qualifications.map((q) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: GlassContainer(
-            width: double.infinity,
-            borderRadius: 14,
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.school_rounded,
-                    color: AppColors.secondary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        q.degree,
-                        style: AppTypography.titleMedium(
-                          isDark,
-                        ).copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${q.institution} (${q.year}) • ${q.grade}',
-                        style: AppTypography.caption(isDark),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildExperienceTab(BuildContext context, bool isDark, Employee emp) {
-    if (emp.experiences.isEmpty) {
-      return GlassContainer(
-        width: double.infinity,
-        borderRadius: 16,
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Text(
-            'No prior work experience listed.',
-            style: AppTypography.bodyMedium(isDark),
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: emp.experiences.map((exp) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: GlassContainer(
-            width: double.infinity,
-            borderRadius: 14,
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.work_history_rounded,
-                    color: AppColors.warning,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        exp.role,
-                        style: AppTypography.titleMedium(
-                          isDark,
-                        ).copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      Text(
-                        '${exp.company} • ${exp.period}',
-                        style: AppTypography.caption(isDark).copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        exp.summary,
-                        style: AppTypography.bodyMedium(isDark),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildDetailGrid(List<_DetailItem> items, bool isDark) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        double width = constraints.maxWidth;
-        int cols = width > 550 ? 2 : 1;
-        double itemWidth = (width - (cols - 1) * 14) / cols;
-
-        return Wrap(
-          spacing: 14,
-          runSpacing: 14,
-          children: items.map((item) {
-            return SizedBox(
-              width: itemWidth,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.cardDark : AppColors.bgLight,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      item.icon,
-                      size: 18,
-                      color: isDark
-                          ? AppColors.textMutedDark
-                          : AppColors.textMutedLight,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.label,
-                            style: AppTypography.caption(isDark),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item.value,
-                            style: AppTypography.bodyMedium(
-                              isDark,
-                            ).copyWith(fontWeight: FontWeight.w700),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
+  String _profileValue(Map<String, dynamic> profile, String key) {
+    final value = profile[key]?.toString().trim();
+    return value == null || value.isEmpty ? 'Not provided' : value;
   }
 }
 
@@ -991,12 +711,4 @@ class _LogoutConfirmationDialog extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DetailItem {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  _DetailItem(this.label, this.value, this.icon);
 }

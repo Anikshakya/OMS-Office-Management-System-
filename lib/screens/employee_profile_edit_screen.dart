@@ -28,6 +28,8 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
   final Map<String, TextEditingController> _controllers = {};
   int _activeTab = 0;
 
+  List<EmployeeDocument> _documentsList = [];
+
   Map<String, dynamic> get _profile =>
       Get.find<UserController>().employeeProfileData;
   Map<String, dynamic> get _family =>
@@ -35,11 +37,164 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
   Employee get _employee => Get.find<AppDataController>().currentUser;
 
   @override
+  void initState() {
+    super.initState();
+    _documentsList = List<EmployeeDocument>.from(_employee.documents);
+  }
+
+  @override
   void dispose() {
     for (final controller in _controllers.values) {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  void _removeDocument(int index) {
+    final removedDoc = _documentsList[index];
+    setState(() {
+      _documentsList.removeAt(index);
+    });
+    Get.find<AppController>().showToast(
+      'Document Removed',
+      '${removedDoc.title} has been deleted.',
+      ToastType.info,
+    );
+  }
+
+  void _showAddDocumentDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    final categoryController = TextEditingController(text: 'Identity');
+    final fileNameController = TextEditingController(text: 'scanned_doc.pdf');
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: GlassContainer(
+              borderRadius: 20,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color:
+                                  AppColors.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.note_add_rounded,
+                              color: AppColors.primary,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Add New Document',
+                            style: AppTypography.titleMedium(isDark).copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  AppTextField(
+                    label: 'Document Title *',
+                    controller: titleController,
+                    hint: 'e.g. Passport / Academic Degree',
+                    prefixIcon: Icons.title_rounded,
+                  ),
+                  const SizedBox(height: 12),
+                  AppTextField(
+                    label: 'Category',
+                    controller: categoryController,
+                    hint: 'e.g. Identity, Tax, Academic',
+                    prefixIcon: Icons.category_outlined,
+                  ),
+                  const SizedBox(height: 12),
+                  AppTextField(
+                    label: 'File Name',
+                    controller: fileNameController,
+                    hint: 'e.g. passport_scan.pdf',
+                    prefixIcon: Icons.insert_drive_file_outlined,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      AppButton.outlined(
+                        label: 'Cancel',
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const SizedBox(width: 12),
+                      AppButton.primary(
+                        label: 'Upload Document',
+                        icon: Icons.add_rounded,
+                        onPressed: () {
+                          final title = titleController.text.trim();
+                          if (title.isEmpty) {
+                            Get.find<AppController>().showToast(
+                              'Validation Error',
+                              'Please enter a document title.',
+                              ToastType.error,
+                            );
+                            return;
+                          }
+                          final now = DateTime.now();
+                          final formattedDate =
+                              '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+                          final newDoc = EmployeeDocument(
+                            title: title,
+                            category: categoryController.text.trim().isNotEmpty
+                                ? categoryController.text.trim()
+                                : 'General',
+                            fileName: fileNameController.text.trim().isNotEmpty
+                                ? fileNameController.text.trim()
+                                : 'document.pdf',
+                            fileSize: '1.2 MB',
+                            uploadedDate: formattedDate,
+                          );
+                          setState(() {
+                            _documentsList.add(newDoc);
+                          });
+                          Navigator.pop(context);
+                          Get.find<AppController>().showToast(
+                            'Document Uploaded',
+                            '$title added successfully.',
+                            ToastType.success,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   String _value(Map<String, dynamic> values, String key) =>
@@ -440,41 +595,147 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
   }
 
   Widget _buildDocumentFields(BuildContext context, bool isDark) {
-    final documents = _employee.documents;
-    if (documents.isEmpty) {
-      return _emptyMessage(context, 'No documents available.');
-    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var i = 0; i < documents.length; i++) ...[
-          _buildSectionLabel('Document ${i + 1}: ${documents[i].title}', isDark),
-          GlassContainer(
-            borderRadius: 16,
-            padding: const EdgeInsets.all(16),
+        _buildSectionLabel('Uploaded Documents (${_documentsList.length})', isDark),
+        const SizedBox(height: 4),
+
+        // 1. Documents List
+        if (_documentsList.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: GlassContainer(
+              borderRadius: 16,
+              padding: const EdgeInsets.all(20),
+              child: Center(
+                child: Text(
+                  'No documents uploaded yet.',
+                  style: AppTypography.bodyMedium(isDark),
+                ),
+              ),
+            ),
+          )
+        else
+          for (var i = 0; i < _documentsList.length; i++) ...[
+            GlassContainer(
+              borderRadius: 16,
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.picture_as_pdf_rounded,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _documentsList[i].title,
+                          style: AppTypography.titleMedium(isDark).copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${_documentsList[i].category} • ${_documentsList[i].fileName} (${_documentsList[i].fileSize})',
+                          style: AppTypography.caption(isDark),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Uploaded: ${_documentsList[i].uploadedDate}',
+                          style: AppTypography.caption(isDark).copyWith(
+                            color: isDark
+                                ? Colors.white54
+                                : AppColors.textMutedLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Delete Document',
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                    onPressed: () => _removeDocument(i),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+        const SizedBox(height: 8),
+
+        // 2. Add Document Container Card with + Sign
+        InkWell(
+          onTap: () => _showAddDocumentDialog(context),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : AppColors.primary.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.5),
+                width: 1.5,
+              ),
+            ),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _field('Title', 'document_${i}_title', {
-                  'document_${i}_title': documents[i].title,
-                }, icon: Icons.title_rounded),
-                _field('Category', 'document_${i}_category', {
-                  'document_${i}_category': documents[i].category,
-                }, icon: Icons.category_outlined),
-                _field('File Name', 'document_${i}_file_name', {
-                  'document_${i}_file_name': documents[i].fileName,
-                }, icon: Icons.insert_drive_file_outlined),
-                _datePickerField(
-                  'Uploaded Date',
-                  'document_${i}_uploaded_date',
-                  {'document_${i}_uploaded_date': documents[i].uploadedDate},
-                  title: 'Select Uploaded Date',
-                  icon: Icons.calendar_month_outlined,
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Add New Document',
+                  style: AppTypography.titleMedium(isDark).copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Tap to upload PDF, PNG or JPG files',
+                  style: AppTypography.caption(isDark).copyWith(
+                    color: isDark ? Colors.white54 : AppColors.textMutedLight,
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-        ],
+        ),
       ],
     );
   }
