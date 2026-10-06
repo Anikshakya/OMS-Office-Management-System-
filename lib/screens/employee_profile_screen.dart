@@ -184,39 +184,17 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     bool isDark,
     Map<String, dynamic> profile,
   ) {
-    final name = _profileValue(profile, 'employee_name');
-    final designation = _profileValue(profile, 'current_designation_name');
-    final employeeCode = _profileValue(profile, 'employee_code');
-    final status = _profileValue(profile, 'active_text');
-    final location =
-        [
-              profile['municipality_name'],
-              profile['district_name'],
-              profile['province_name'],
-            ]
-            .where(
-              (value) => value != null && value.toString().trim().isNotEmpty,
-            )
-            .map((value) => value.toString().trim())
-            .join(', ');
+    final rawName = _profileValue(profile, 'employee_name');
+    final name = rawName != 'Not provided' ? rawName.toUpperCase() : 'ANIK SHAKYA';
+    final rawDesignation = _profileValue(profile, 'current_designation_name');
+    final designation = rawDesignation != 'Not provided' ? rawDesignation.toLowerCase() : 'employee';
+    final rawEmail = _profileValue(profile, 'email');
+    final email = rawEmail != 'Not provided' ? rawEmail : 'anik_mi@yonefu.info';
+    final avatarUrl = profile['image_name_url']?.toString() ?? '';
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-              : [Colors.white, const Color(0xFFF8FAFC)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.borderLight,
-          width: 1,
-        ),
-        boxShadow: AppColors.softShadow(isDark),
-      ),
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isNarrow = constraints.maxWidth < 480;
@@ -227,87 +205,78 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Stack(
+                    clipBehavior: Clip.none,
                     children: [
                       Hero(
                         tag: employeeProfileAvatarHeroTag,
                         child: AppAvatar(
-                          url: profile['image_name_url']?.toString() ?? '',
+                          url: avatarUrl,
                           name: name,
-                          radius: isNarrow ? 28 : 36,
+                          radius: isNarrow ? 38 : 46,
                         ),
                       ),
                       Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: AppColors.success,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isDark
-                                  ? AppColors.surfaceDark
-                                  : Colors.white,
-                              width: 2,
+                        right: -2,
+                        bottom: -2,
+                        child: GestureDetector(
+                          onTap: _openEditProfilePage,
+                          child: Container(
+                            width: isNarrow ? 30 : 34,
+                            height: isNarrow ? 30 : 34,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFE53935), // Red circle action button
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.edit_rounded,
+                              color: Colors.white,
+                              size: isNarrow ? 15 : 17,
                             ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 18),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                name,
-                                style: AppTypography.displayMedium(
-                                  isDark,
-                                ).copyWith(fontWeight: FontWeight.bold),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.success.withValues(
-                                  alpha: 0.15,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                status,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.success,
-                                ),
-                              ),
-                            ),
-                          ],
+                        Text(
+                          name,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                            fontSize: isNarrow ? 18 : 22,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           designation,
-                          style: AppTypography.titleMedium(isDark).copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
+                          style: TextStyle(
+                            color: const Color(0xFFE53935), // Red subtitle text
+                            fontSize: isNarrow ? 13 : 14,
+                            fontWeight: FontWeight.w500,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Code: $employeeCode • $location',
-                          style: AppTypography.caption(isDark),
+                          email,
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+                            fontSize: isNarrow ? 13 : 14,
+                            fontWeight: FontWeight.w400,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -315,9 +284,13 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                   ),
                 ],
               ),
-
-              const SizedBox(height: 14),
-              const Divider(height: 1),
+              const SizedBox(height: 16),
+              Divider(
+                height: 1,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : AppColors.borderLight,
+              ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
