@@ -238,6 +238,7 @@ class UserController extends GetxController {
     }
 
     final payload = <String, dynamic>{
+      '_method' : 'PATCH',
       'employee_id': parsedEmployeeId,
       'spouse_name': spouseName,
       'spouse_name_locale': spouseNameLocale,
@@ -253,7 +254,7 @@ class UserController extends GetxController {
     isEmployeeFamilySaving.value = true;
     try {
       final response = await ApiRepo.apiPost(
-        apiPath: 'employeeapp/employee-families',
+        apiPath: 'employeeapp/employee-families/{id}',
         data: payload,
         showToast: true,
       );
