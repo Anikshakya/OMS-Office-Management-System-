@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/app_data_controller.dart';
 import '../controllers/app_controller.dart';
+import '../controllers/leave_controller.dart';
 import '../controllers/user_controller.dart';
 import '../models/toast_notification.dart';
 import '../theme/app_colors.dart';
@@ -147,6 +148,12 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     final selectedDate = picked;
     if (selectedDate != null) {
       setState(() {
+        if (_durationType != 'full') {
+          _startDate = selectedDate;
+          _endDate = selectedDate;
+          return;
+        }
+
         if (isStart) {
           _startDate = selectedDate;
           if (_endDate.isBefore(_startDate)) {
@@ -194,6 +201,10 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
         _durationType = 'quarter';
         _quarterPeriod = 'Q4 (Evening)';
       }
+
+      if (_durationType != 'full') {
+        _endDate = _startDate;
+      }
     });
   }
 
@@ -216,7 +227,8 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     return '${days[dt.weekday - 1]}, ${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 
-  void _handleSubmit() async {
+  Future<void> _handleSubmit() async {
+    if (_isSubmitting) return;
     if (!_formKey.currentState!.validate()) return;
 
     final reason = _reasonController.text.trim();
@@ -229,27 +241,86 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    final isHalfOrQuarter = _durationType != 'full';
-    final periodText = _durationType == 'half'
-        ? _halfDayPeriod
-        : (_durationType == 'quarter' ? _quarterPeriod : null);
-
-    _data.submitLeaveRequest(
-      leaveType: _selectedType,
-      startDate: _startDate,
-      endDate: _endDate,
-      durationDays: _calculatedDays,
-      isHalfDay: isHalfOrQuarter,
-      halfDayType: periodText,
-      reason: reason,
+    final user = _userController.currentUser.value;
+    final employeeId = int.tryParse(
+      (_userController.employeeProfileData['employee_id'] ?? user?.id ?? '')
+          .toString(),
     );
+    if (employeeId == null) {
+      _appController.showToast(
+        'Submission Error',
+        'Unable to identify your employee account. Please try again.',
+        ToastType.error,
+      );
+      return;
+    }
 
-    setState(() => _isSubmitting = false);
-    _appController.setPageIndex(4);
-    Get.back();
+    final supervisorId =
+        (_userController.employeeProfileData['supervisor_id'] ??
+                _userController.employeeProfileData['supervisor_ids'] ??
+                '')
+            .toString()
+            .trim();
+    if (int.tryParse(supervisorId) == null) {
+      _appController.showToast(
+        'Submission Error',
+        'Unable to identify your assigned supervisor. Please reload your profile and try again.',
+        ToastType.error,
+      );
+      return;
+    }
+
+    final leaveId = switch (_selectedType) {
+      LeaveType.annual => 1,
+      LeaveType.sick => 2,
+      LeaveType.casual => 3,
+      LeaveType.maternityPaternity => 4,
+      LeaveType.unpaid => null,
+    };
+    if (leaveId == null) {
+      _appController.showToast(
+        'Submission Error',
+        'Unpaid leave requests are not supported yet.',
+        ToastType.error,
+      );
+      return;
+    }
+
+    final leaveDurationType = switch (_durationType) {
+      'full' => '1',
+      'half' => '2',
+      'quarter' => '3',
+      _ => null,
+    };
+    if (leaveDurationType == null) {
+      _appController.showToast(
+        'Submission Error',
+        'Please select a valid leave duration.',
+        ToastType.error,
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final submitted = await Get.find<LeaveController>().applyLeave(
+        supervisorId: supervisorId,
+        coveringEmployee: '',
+        startDate: _startDate,
+        endDate: _durationType == 'full' ? _endDate : _startDate,
+        leaveId: leaveId,
+        leaveDurationType: leaveDurationType,
+        leaveReason: reason,
+        employeeId: employeeId,
+      );
+      if (submitted) {
+        _appController.setPageIndex(4);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -542,6 +613,48 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Leave duration selector
+          Text(
+            'Duration',
+            style: AppTypography.caption(
+              isDark,
+            ).copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: _selectDuration,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.cardDark : AppColors.bgLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _selectedDurationOption,
+                      style: AppTypography.bodyMedium(
+                        isDark,
+                      ).copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.unfold_more_rounded,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+          const Divider(),
+          const SizedBox(height: 10),
+
           Row(
             children: [
               Expanded(
@@ -586,92 +699,52 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: InkWell(
-                  onTap: () => _selectDate(context, false),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.cardDark : AppColors.bgLight,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'End Date (To)',
-                          style: AppTypography.caption(isDark),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.calendar_month_rounded,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                _formatDate(_endDate),
-                                style: AppTypography.bodyMedium(
-                                  isDark,
-                                ).copyWith(fontWeight: FontWeight.bold),
-                                overflow: TextOverflow.ellipsis,
+              if (_durationType == 'full') ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _selectDate(context, false),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.cardDark : AppColors.bgLight,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'End Date (To)',
+                            style: AppTypography.caption(isDark),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_month_rounded,
+                                size: 16,
+                                color: AppColors.primary,
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  _formatDate(_endDate),
+                                  style: AppTypography.bodyMedium(
+                                    isDark,
+                                  ).copyWith(fontWeight: FontWeight.bold),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ),
-
-          const SizedBox(height: 14),
-          const Divider(),
-          const SizedBox(height: 10),
-
-          // Leave duration selector
-          Text(
-            'Duration',
-            style: AppTypography.caption(
-              isDark,
-            ).copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          InkWell(
-            onTap: _selectDuration,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.cardDark : AppColors.bgLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _selectedDurationOption,
-                      style: AppTypography.bodyMedium(
-                        isDark,
-                      ).copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const Icon(
-                    Icons.unfold_more_rounded,
-                    size: 20,
-                    color: AppColors.primary,
-                  ),
-                ],
-              ),
-            ),
           ),
 
           const SizedBox(height: 12),

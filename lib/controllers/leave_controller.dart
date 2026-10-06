@@ -1,13 +1,18 @@
+import 'dart:async';
 import 'dart:developer';
 
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:oms/api_config/api_repo.dart';
 import 'package:oms/models/leave_request.dart';
 import 'package:oms/controllers/user_controller.dart';
+import 'package:oms/services/toast_service.dart';
 
 class LeaveController extends GetxController {
   final RxList<LeaveRequest> leaveHistory = <LeaveRequest>[].obs;
   final RxBool isLoading = false.obs;
+  final RxBool isApplyLeaveLoading = false.obs;
 
   Future<void> fetchLeaveHistory() async {
     final user = Get.find<UserController>().currentUser.value;
@@ -103,6 +108,87 @@ class LeaveController extends GetxController {
         status: LeaveStatus.cancelled,
       );
       leaveHistory[index] = updatedReq;
+    }
+  }
+
+  // Apply Leave
+  Future<bool> applyLeave({
+    required String supervisorId,
+    required String coveringEmployee,
+    required DateTime startDate,
+    required DateTime endDate,
+    required int leaveId,
+    required String leaveDurationType,
+    required String leaveReason,
+    required int employeeId,
+  }) async {
+    final parsedSupervisorId = int.tryParse(supervisorId.trim());
+    final parsedLeaveDurationType = int.tryParse(leaveDurationType.trim());
+    if (parsedSupervisorId == null ||
+        parsedSupervisorId <= 0 ||
+        parsedLeaveDurationType == null) {
+      ToastService.showErrorToast(
+        'Please select a valid supervisor and leave duration.',
+      );
+      return false;
+    }
+
+    isApplyLeaveLoading.value = true;
+    try {
+      final dateFormat = DateFormat('yyyy-MM-dd');
+      final formattedStartDate = dateFormat.format(startDate);
+      final formattedEndDate = dateFormat.format(endDate);
+      final data = {
+        'fiscal_year_id': 4,
+        'employee_id': employeeId,
+        'leave_id': leaveId,
+        'leave_duration_type': parsedLeaveDurationType,
+        'start_date': formattedStartDate,
+        'end_date': formattedEndDate,
+        'start_date_locale': formattedStartDate,
+        'end_date_locale': formattedEndDate,
+        'leave_reason': leaveReason.trim(),
+        'supervisor_id': parsedSupervisorId,
+        // 'supervisor_id_cc': coveringEmployee.trim().isEmpty
+        //     ? null
+        //     : coveringEmployee.trim(),
+      };
+      final apiResponse = await ApiRepo.apiPost(
+        apiPath: 'employeeapp/employee-leaves/apply',
+        options: Options(
+          headers: {'x-fiscal-year-id': '4'},
+        ),
+        data: data,
+        showToast: false,
+      );
+
+      if (apiResponse is Map && apiResponse['status'] == 'success') {
+        unawaited(fetchLeaveHistory());
+        Get.back();
+        ToastService.showSuccessToast(
+          apiResponse['message']?.toString() ??
+              'Leave request submitted successfully.',
+        );
+        return true;
+      } else {
+        final message = apiResponse is Map
+            ? apiResponse['message']?.toString()
+            : apiResponse?.toString();
+        ToastService.showErrorToast(
+          message == null || message.isEmpty
+              ? 'Unable to submit leave request. Please try again.'
+              : message,
+        );
+        return false;
+      }
+    } catch (error, stackTrace) {
+      log('Error applying for leave: $error', stackTrace: stackTrace);
+      ToastService.showErrorToast(
+        'Unable to submit leave request. Please try again.',
+      );
+      return false;
+    } finally {
+      isApplyLeaveLoading.value = false;
     }
   }
 }
