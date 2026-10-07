@@ -82,6 +82,101 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
     super.dispose();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Edit Profile'), centerTitle: true),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 750),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Header Card matching attached reference image
+                _buildHeaderCard(context),
+
+                const SizedBox(height: 16),
+
+                // 2. Custom Tab Bar
+                AppTabBar(
+                  tabs: const [
+                    'Personal',
+                    'Employment',
+                    'Documents',
+                    'Qualifications',
+                    'Experience',
+                    'Family',
+                  ],
+                  selectedIndex: _activeTab,
+                  onTabChanged: (index) => setState(() => _activeTab = index),
+                ),
+
+                const SizedBox(height: 16),
+
+                // 3. Tab Content Form Cards matching Apply Leave UI style
+                Obx(
+                  () => Form(
+                    key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    child: _activeFields(context, isDark),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // 4. Submit / Save Button
+                Obx(() {
+                  if (_activeTab == 1 ||
+                      (_activeTab == 3 && !_isEducationFormVisible) ||
+                      (_activeTab == 4 && !_isExperienceFormVisible)) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final userController = Get.find<UserController>();
+                  final isSaving = switch (_activeTab) {
+                    3 => userController.isEmployeeEducationsSaving.value,
+                    4 => userController.isEmployeeExperiencesSaving.value,
+                    5 => userController.isEmployeeFamilySaving.value,
+                    _ => userController.isEmployeeProfileSaving.value,
+                  };
+                  final label = switch (_activeTab) {
+                    3 =>
+                      '${_editingEducationIndex == null ? 'Add' : 'Update'} Qualification',
+                    4 =>
+                      '${_editingExperienceIndex == null ? 'Add' : 'Update'} Experience',
+                    5 =>
+                      '${_hasFamilyRecord ? 'Update' : 'Add'} Family Details',
+                    _ =>
+                      'Update ${['Personal', 'Employment', 'Documents', 'Qualifications', 'Experience', 'Family'][_activeTab]} Details',
+                  };
+                  return AppButton.primary(
+                    label: label,
+                    icon:
+                        (_activeTab == 3 && _editingEducationIndex == null) ||
+                            (_activeTab == 4 &&
+                                _editingExperienceIndex == null) ||
+                            (_activeTab == 5 && !_hasFamilyRecord)
+                        ? Icons.add_rounded
+                        : Icons.save_rounded,
+                    isFullWidth: true,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    borderRadius: 16,
+                    isLoading: isSaving,
+                    onPressed: isSaving ? null : _onUpdatePressed,
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _removeDocument(int index) {
     final removedDoc = _documentsList[index];
     setState(() {
@@ -2110,100 +2205,5 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
       _editingExperienceIndex = null;
       _isExperienceFormVisible = false;
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Edit Profile'), centerTitle: true),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 750),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. Header Card matching attached reference image
-                _buildHeaderCard(context),
-
-                const SizedBox(height: 16),
-
-                // 2. Custom Tab Bar
-                AppTabBar(
-                  tabs: const [
-                    'Personal',
-                    'Employment',
-                    'Documents',
-                    'Qualifications',
-                    'Experience',
-                    'Family',
-                  ],
-                  selectedIndex: _activeTab,
-                  onTabChanged: (index) => setState(() => _activeTab = index),
-                ),
-
-                const SizedBox(height: 16),
-
-                // 3. Tab Content Form Cards matching Apply Leave UI style
-                Obx(
-                  () => Form(
-                    key: _formKey,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    child: _activeFields(context, isDark),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // 4. Submit / Save Button
-                Obx(() {
-                  if (_activeTab == 1 ||
-                      (_activeTab == 3 && !_isEducationFormVisible) ||
-                      (_activeTab == 4 && !_isExperienceFormVisible)) {
-                    return const SizedBox.shrink();
-                  }
-
-                  final userController = Get.find<UserController>();
-                  final isSaving = switch (_activeTab) {
-                    3 => userController.isEmployeeEducationsSaving.value,
-                    4 => userController.isEmployeeExperiencesSaving.value,
-                    5 => userController.isEmployeeFamilySaving.value,
-                    _ => userController.isEmployeeProfileSaving.value,
-                  };
-                  final label = switch (_activeTab) {
-                    3 =>
-                      '${_editingEducationIndex == null ? 'Add' : 'Update'} Qualification',
-                    4 =>
-                      '${_editingExperienceIndex == null ? 'Add' : 'Update'} Experience',
-                    5 =>
-                      '${_hasFamilyRecord ? 'Update' : 'Add'} Family Details',
-                    _ =>
-                      'Update ${['Personal', 'Employment', 'Documents', 'Qualifications', 'Experience', 'Family'][_activeTab]} Details',
-                  };
-                  return AppButton.primary(
-                    label: label,
-                    icon:
-                        (_activeTab == 3 && _editingEducationIndex == null) ||
-                            (_activeTab == 4 &&
-                                _editingExperienceIndex == null) ||
-                            (_activeTab == 5 && !_hasFamilyRecord)
-                        ? Icons.add_rounded
-                        : Icons.save_rounded,
-                    isFullWidth: true,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    borderRadius: 16,
-                    isLoading: isSaving,
-                    onPressed: isSaving ? null : _onUpdatePressed,
-                  );
-                }),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

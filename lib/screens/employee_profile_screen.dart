@@ -45,153 +45,6 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     ]);
   }
 
-  void _openEditProfilePage() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const EmployeeProfileEditScreen(),
-      ),
-    );
-  }
-
-  void _showLogoutConfirmation() {
-    final authController = Get.isRegistered<AuthController>()
-        ? Get.find<AuthController>()
-        : Get.put(AuthController());
-
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) =>
-          _LogoutConfirmationDialog(authController: authController),
-    );
-  }
-
-  void _showLanguagePicker(BuildContext context, bool isDark) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.language_rounded),
-                title: const Text('English (Eng)'),
-                trailing: _selectedLanguage == 'Eng'
-                    ? const Icon(Icons.check_rounded, color: Color(0xFFE53935))
-                    : null,
-                onTap: () {
-                  setState(() => _selectedLanguage = 'Eng');
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.translate_rounded),
-                title: const Text('Nepali (Nep)'),
-                trailing: _selectedLanguage == 'Nep'
-                    ? const Icon(Icons.check_rounded, color: Color(0xFFE53935))
-                    : null,
-                onTap: () {
-                  setState(() => _selectedLanguage = 'Nep');
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showDateFormatPicker(BuildContext context, bool isDark) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.calendar_month_rounded),
-                title: const Text('Bikram Sambat (BS)'),
-                trailing: _selectedDateFormat == 'BS'
-                    ? const Icon(Icons.check_rounded, color: Color(0xFFE53935))
-                    : null,
-                onTap: () {
-                  setState(() => _selectedDateFormat = 'BS');
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.calendar_today_rounded),
-                title: const Text('Anno Domini (AD)'),
-                trailing: _selectedDateFormat == 'AD'
-                    ? const Icon(Icons.check_rounded, color: Color(0xFFE53935))
-                    : null,
-                onTap: () {
-                  setState(() => _selectedDateFormat = 'AD');
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showAboutUsDialog(BuildContext context, bool isDark) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Icon(Icons.business_rounded, color: Color(0xFFE53935)),
-            const SizedBox(width: 10),
-            const Text('About Us'),
-          ],
-        ),
-        content: const Text(
-          'Office Management System (OMS)\nVersion 2.4.0\n\nEmpowering corporate productivity with modern employee management tools.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -573,7 +426,9 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
                         horizontal: 14,
                         vertical: 8,
                       ),
-                      onPressed: _openEditProfilePage,
+                      onPressed: (){
+                        Get.to(() => const EmployeeProfileEditScreen());
+                      },
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -652,6 +507,145 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
   String _profileValue(Map<String, dynamic> profile, String key) {
     final value = profile[key]?.toString().trim();
     return value == null || value.isEmpty ? 'Not provided' : value;
+  }
+
+  void _showLogoutConfirmation() {
+    final authController = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : Get.put(AuthController());
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) =>
+          _LogoutConfirmationDialog(authController: authController),
+    );
+  }
+
+  void _showLanguagePicker(BuildContext context, bool isDark) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.language_rounded),
+                title: const Text('English (Eng)'),
+                trailing: _selectedLanguage == 'Eng'
+                    ? const Icon(Icons.check_rounded, color: Color(0xFFE53935))
+                    : null,
+                onTap: () {
+                  setState(() => _selectedLanguage = 'Eng');
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.translate_rounded),
+                title: const Text('Nepali (Nep)'),
+                trailing: _selectedLanguage == 'Nep'
+                    ? const Icon(Icons.check_rounded, color: Color(0xFFE53935))
+                    : null,
+                onTap: () {
+                  setState(() => _selectedLanguage = 'Nep');
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDateFormatPicker(BuildContext context, bool isDark) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_month_rounded),
+                title: const Text('Bikram Sambat (BS)'),
+                trailing: _selectedDateFormat == 'BS'
+                    ? const Icon(Icons.check_rounded, color: Color(0xFFE53935))
+                    : null,
+                onTap: () {
+                  setState(() => _selectedDateFormat = 'BS');
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_today_rounded),
+                title: const Text('Anno Domini (AD)'),
+                trailing: _selectedDateFormat == 'AD'
+                    ? const Icon(Icons.check_rounded, color: Color(0xFFE53935))
+                    : null,
+                onTap: () {
+                  setState(() => _selectedDateFormat = 'AD');
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAboutUsDialog(BuildContext context, bool isDark) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.business_rounded, color: Color(0xFFE53935)),
+            const SizedBox(width: 10),
+            const Text('About Us'),
+          ],
+        ),
+        content: const Text(
+          'Office Management System (OMS)\nVersion 2.4.0\n\nEmpowering corporate productivity with modern employee management tools.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
