@@ -407,6 +407,7 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
     int maxLines = 1,
     bool requiredField = false,
     bool integerField = false,
+    bool emailField = false,
     bool? isReadOnly,
   }) {
     final controller = _controllers.putIfAbsent(
@@ -428,7 +429,24 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                 if (integerField && int.tryParse(value!.trim()) == null) {
                   return 'Enter a valid ID';
                 }
+                if (emailField &&
+                    value != null &&
+                    value.trim().isNotEmpty &&
+                    !RegExp(
+                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                    ).hasMatch(value.trim())) {
+                  return 'Enter a valid email address';
+                }
                 return null;
+              }
+            : emailField
+            ? (value) {
+                if (value == null || value.trim().isEmpty) return null;
+                return RegExp(
+                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                    ).hasMatch(value.trim())
+                    ? null
+                    : 'Enter a valid email address';
               }
             : null,
       ),
@@ -547,12 +565,14 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                 'email',
                 _profile,
                 icon: Icons.email_outlined,
+                emailField: true,
               ),
               _field(
                 'Personal Email Address',
                 'email_per',
                 _profile,
                 icon: Icons.alternate_email_rounded,
+                emailField: true,
               ),
               _field(
                 'Phone Number *',
@@ -817,40 +837,46 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
           child: Column(
             children: [
               _field(
-                'Father Name',
+                'Father Name *',
                 'father_name',
                 _family,
                 icon: Icons.person_outline_rounded,
+                requiredField: true,
               ),
               _field(
-                'Father Name (Local)',
+                'Father Name (Local) *',
                 'father_name_locale',
                 _family,
                 icon: Icons.translate_rounded,
+                requiredField: true,
               ),
               _field(
-                'Mother Name',
+                'Mother Name *',
                 'mother_name',
                 _family,
                 icon: Icons.person_outline_rounded,
+                requiredField: true,
               ),
               _field(
-                'Mother Name (Local)',
+                'Mother Name (Local) *',
                 'mother_name_locale',
                 _family,
                 icon: Icons.translate_rounded,
+                requiredField: true,
               ),
               _field(
-                'Grandfather Name',
+                'Grandfather Name *',
                 'grandfather_name',
                 _family,
                 icon: Icons.person_outline_rounded,
+                requiredField: true,
               ),
               _field(
-                'Grandmother Name',
+                'Grandmother Name *',
                 'grandmother_name',
                 _family,
                 icon: Icons.person_outline_rounded,
+                requiredField: true,
               ),
             ],
           ),
@@ -1714,6 +1740,7 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                 Obx(
                   () => Form(
                     key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     child: _activeFields(context, isDark),
                   ),
                 ),

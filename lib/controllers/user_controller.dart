@@ -46,6 +46,34 @@ class UserController extends GetxController {
   }) async {
     if (isEmployeeProfileSaving.value) return;
 
+    final requiredFields = <String, String>{
+      'Employee name': employeeName,
+      'Employee code': employeeCode,
+      'Employee name (local)': employeeNameLocale,
+      'Phone': phone,
+      'Permanent address': addressPermanent,
+      'Current address': addressCurrent,
+      'Joining date': dateJoined,
+    };
+    final missingField = requiredFields.entries
+        .where((field) => field.value.trim().isEmpty)
+        .firstOrNull;
+    if (missingField != null) {
+      ToastService.showErrorToast('${missingField.key} is required.');
+      return;
+    }
+    final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if ((email.isNotEmpty && !emailPattern.hasMatch(email.trim())) ||
+        (emailPersonal.isNotEmpty &&
+            !emailPattern.hasMatch(emailPersonal.trim()))) {
+      ToastService.showErrorToast('Enter valid email addresses.');
+      return;
+    }
+    if (DateTime.tryParse(dateJoined) == null) {
+      ToastService.showErrorToast('Enter a valid joining date.');
+      return;
+    }
+
     final parsedZoneId = int.tryParse(zoneId);
     final parsedDistrictId = int.tryParse(districtId);
     final parsedProvinceId = int.tryParse(provinceId);
@@ -203,7 +231,7 @@ class UserController extends GetxController {
         } else if (data is Map) {
           employeeFamilyData.assignAll(Map<String, dynamic>.from(data));
         }
-      } 
+      }
     } catch (error, stackTrace) {
       employeeFamilyError.value =
           'Unable to load family information. Please try again.';
@@ -233,6 +261,21 @@ class UserController extends GetxController {
       ToastService.showErrorToast('Employee ID must be a valid number.');
       return;
     }
+    final requiredFields = <String, String>{
+      'Father name': fatherName,
+      'Father name (local)': fatherNameLocale,
+      'Mother name': motherName,
+      'Mother name (local)': motherNameLocale,
+      'Grandfather name': grandfatherName,
+      'Grandmother name': grandmotherName,
+    };
+    final missingField = requiredFields.entries
+        .where((field) => field.value.trim().isEmpty)
+        .firstOrNull;
+    if (missingField != null) {
+      ToastService.showErrorToast('${missingField.key} is required.');
+      return;
+    }
 
     final payload = <String, dynamic>{
       'employee_id': parsedEmployeeId,
@@ -253,7 +296,9 @@ class UserController extends GetxController {
     isEmployeeFamilySaving.value = true;
     try {
       final response = await ApiRepo.apiPost(
-        apiPath: isCreate ? 'employeeapp/employee-families' : 'employeeapp/employee-families/{id}',
+        apiPath: isCreate
+            ? 'employeeapp/employee-families'
+            : 'employeeapp/employee-families/{id}',
         data: payload,
         showToast: true,
       );
@@ -387,7 +432,9 @@ class UserController extends GetxController {
     isEmployeeExperiencesSaving.value = true;
     try {
       final response = await ApiRepo.apiPost(
-        apiPath: isCreate ? 'employeeapp/employee-experiences' : 'employeeapp/employee-experiences/$parsedEmployeeId',
+        apiPath: isCreate
+            ? 'employeeapp/employee-experiences'
+            : 'employeeapp/employee-experiences/{id}',
         data: payload,
         showToast: true,
       );
@@ -397,13 +444,7 @@ class UserController extends GetxController {
           await fetchEmployeeExperiences();
           Get.back();
         }
-      } else {
-        employeeExperiencesError.value = response is Map
-            ? response['message']?.toString() ??
-                  'Unable to update experience information. Please try again.'
-            : 'Unable to update experience information. Please try again.';
-        ToastService.showErrorToast(employeeExperiencesError.value);
-      }
+      } 
     } catch (error, stackTrace) {
       employeeExperiencesError.value =
           'Unable to update experience information. Please try again.';

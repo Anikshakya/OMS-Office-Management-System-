@@ -47,9 +47,9 @@ class AppTextField extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: AppTypography.labelMedium(isDark).copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTypography.labelMedium(
+              isDark,
+            ).copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
         ],
@@ -66,25 +66,34 @@ class AppTextField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: AppTypography.bodyMedium(isDark).copyWith(
-              color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+              color: isDark
+                  ? AppColors.textMutedDark
+                  : AppColors.textMutedLight,
             ),
             filled: true,
             fillColor: isDark
                 ? (enabled ? AppColors.surfaceDark : AppColors.bgDark)
                 : (enabled ? AppColors.surfaceLight : AppColors.bgLight),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             prefixIcon: prefixIcon != null
                 ? Icon(
                     prefixIcon,
                     size: 18,
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
                   )
                 : null,
             suffixIcon: suffixIcon,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(
-                color: hasError ? AppColors.error : (isDark ? AppColors.borderDark : AppColors.borderLight),
+                color: hasError
+                    ? AppColors.error
+                    : (isDark ? AppColors.borderDark : AppColors.borderLight),
                 width: 1,
               ),
             ),
@@ -95,10 +104,26 @@ class AppTextField extends StatelessWidget {
                 width: 1.8,
               ),
             ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.error, width: 1.2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.error, width: 1.8),
+            ),
+            errorStyle: AppTypography.caption(isDark).copyWith(
+              color: AppColors.error,
+              height: 1.2,
+              fontWeight: FontWeight.w500,
+            ),
+            errorMaxLines: 2,
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(
-                color: isDark ? AppColors.borderDark.withValues(alpha: 0.3) : AppColors.borderLight.withValues(alpha: 0.5),
+                color: isDark
+                    ? AppColors.borderDark.withValues(alpha: 0.3)
+                    : AppColors.borderLight.withValues(alpha: 0.5),
                 width: 1,
               ),
             ),
@@ -112,7 +137,9 @@ class AppTextField extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 errorText!,
-                style: AppTypography.caption(isDark).copyWith(color: AppColors.error),
+                style: AppTypography.caption(
+                  isDark,
+                ).copyWith(color: AppColors.error),
               ),
             ],
           ),
@@ -181,9 +208,9 @@ class AppDropdownField<T> extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: AppTypography.labelMedium(isDark).copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTypography.labelMedium(
+              isDark,
+            ).copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
         ],
@@ -191,27 +218,39 @@ class AppDropdownField<T> extends StatelessWidget {
           initialValue: value,
           items: items,
           onChanged: onChanged,
-          dropdownColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+          dropdownColor: isDark
+              ? AppColors.surfaceDark
+              : AppColors.surfaceLight,
           style: AppTypography.bodyLarge(isDark),
           borderRadius: BorderRadius.circular(12),
           icon: Icon(
             Icons.keyboard_arrow_down_rounded,
-            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
           decoration: InputDecoration(
             filled: true,
             fillColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(
-                color: errorText != null ? AppColors.error : (isDark ? AppColors.borderDark : AppColors.borderLight),
+                color: errorText != null
+                    ? AppColors.error
+                    : (isDark ? AppColors.borderDark : AppColors.borderLight),
                 width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.8),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.8,
+              ),
             ),
           ),
         ),
@@ -251,9 +290,9 @@ class AppDatePickerField extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: AppTypography.labelMedium(isDark).copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTypography.labelMedium(
+              isDark,
+            ).copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
         ],
@@ -266,7 +305,9 @@ class AppDatePickerField extends StatelessWidget {
               color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: errorText != null ? AppColors.error : (isDark ? AppColors.borderDark : AppColors.borderLight),
+                color: errorText != null
+                    ? AppColors.error
+                    : (isDark ? AppColors.borderDark : AppColors.borderLight),
                 width: 1,
               ),
             ),
@@ -275,7 +316,9 @@ class AppDatePickerField extends StatelessWidget {
                 Icon(
                   Icons.calendar_today_rounded,
                   size: 16,
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -284,7 +327,9 @@ class AppDatePickerField extends StatelessWidget {
                     style: formattedDate != null
                         ? AppTypography.bodyLarge(isDark)
                         : AppTypography.bodyMedium(isDark).copyWith(
-                            color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                            color: isDark
+                                ? AppColors.textMutedDark
+                                : AppColors.textMutedLight,
                           ),
                   ),
                 ),

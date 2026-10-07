@@ -13,7 +13,7 @@ class AppColors {
   // Semantic Status Colors (iOS Palette)
   static const Color success = Color(0xFF34C759); // iOS System Green
   static const Color warning = Color(0xFFFF9500); // iOS System Orange
-  static const Color error = Color(0xFFFF3B30); // iOS System Red
+  static const Color error = Color.fromARGB(72, 255, 58, 48); // iOS System Red
   static const Color info = Color(0xFF64D2FF); // iOS System Cyan
 
   // Light Theme Palette (iOS 18 Light)
