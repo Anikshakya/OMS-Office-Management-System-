@@ -1156,132 +1156,387 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
       };
 
   Widget _buildHeaderCard(BuildContext context) {
-    final name = _value(_profile, 'employee_name');
-    final displayName = name.isNotEmpty ? name.toUpperCase() : 'ANIK SHAKYA';
-    final designation = _value(_profile, 'current_designation_name');
-    final displayRole = designation.isNotEmpty
-        ? designation.toLowerCase()
-        : 'employee';
-    final email = _value(_profile, 'email');
-    final displayEmail = email.isNotEmpty ? email : 'anik_mi@yonefu.info';
-    final avatarUrl = _value(_profile, 'image_name_url');
+  final name = _value(_profile, 'employee_name');
+  final displayName = name.isNotEmpty ? name.toUpperCase() : 'ANIK SHAKYA';
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  final designation = _value(_profile, 'current_designation_name');
+  final displayRole =
+      designation.isNotEmpty ? designation : 'Employee';
+
+  final email = _value(_profile, 'email');
+  final displayEmail =
+      email.isNotEmpty ? email : 'anik_mi@yonefu.info';
+
+  final avatarUrl = _value(_profile, 'image_name_url');
+
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  final background = isDark
+      ? const Color(0xFF111111)
+      : const Color(0xFFFFFFFF);
+
+  final foreground = isDark
+      ? Colors.white
+      : const Color(0xFF151515);
+
+  final secondary = isDark
+      ? Colors.white.withValues(alpha: 0.48)
+      : Colors.black.withValues(alpha: 0.45);
+
+  final border = isDark
+      ? Colors.white.withValues(alpha: 0.07)
+      : Colors.black.withValues(alpha: 0.07);
+
+  return Container(
+    width: double.infinity,
+    height: 190,
+    clipBehavior: Clip.antiAlias,
+    decoration: BoxDecoration(
+      color: background,
+      borderRadius: BorderRadius.circular(26),
+      border: Border.all(color: border),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(
+            alpha: isDark ? 0.30 : 0.08,
           ),
-        ],
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isNarrow = constraints.maxWidth < 400;
+          blurRadius: 35,
+          offset: const Offset(0, 18),
+        ),
+      ],
+    ),
+    child: Stack(
+      children: [
+        // =========================================================
+        // BACKGROUND TYPOGRAPHIC DETAIL
+        // =========================================================
 
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Avatar with Attached Red Circle Edit Pencil Button
-              Stack(
-                clipBehavior: Clip.none,
+        Positioned(
+          right: -10,
+          bottom: -32,
+          child: Text(
+            '01',
+            style: TextStyle(
+              fontSize: 170,
+              fontWeight: FontWeight.w900,
+              height: 1,
+              color: AppColors.primary.withValues(alpha: 0.035),
+              letterSpacing: -12,
+            ),
+          ),
+        ),
+
+        // =========================================================
+        // TOP ACCENT LINE
+        // =========================================================
+
+        Positioned(
+          top: 0,
+          left: 28,
+          right: 28,
+          child: Container(
+            height: 2,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0),
+                  AppColors.primary,
+                  AppColors.primary.withValues(alpha: 0),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // =========================================================
+        // CONTENT
+        // =========================================================
+
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 22, 20, 20),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 470;
+
+              final avatarSize = compact ? 92.0 : 108.0;
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Hero(
-                    tag: employeeProfileAvatarHeroTag,
-                    child: AppAvatar(
-                      url: avatarUrl,
-                      name: displayName,
-                      radius: isNarrow ? 40 : 48,
+                  // =====================================================
+                  // AVATAR
+                  // =====================================================
+
+                  SizedBox(
+                    width: avatarSize,
+                    height: avatarSize,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Outer ring
+                        Container(
+                          width: avatarSize,
+                          height: avatarSize,
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.primary.withValues(
+                                alpha: 0.35,
+                              ),
+                              width: 1,
+                            ),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: background,
+                            ),
+                            child: Hero(
+                              tag: employeeProfileAvatarHeroTag,
+                              child: AppAvatar(
+                                url: avatarUrl,
+                                name: displayName,
+                                radius: avatarSize / 2,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Active status
+                        Positioned(
+                          right: 3,
+                          bottom: 5,
+                          child: Container(
+                            width: 17,
+                            height: 17,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF35C759),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: background,
+                                width: 4,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Edit action
+                        Positioned(
+                          left: -5,
+                          bottom: -3,
+                          child: GestureDetector(
+                            onTap: () {
+                              Get.find<AppController>().showToast(
+                                'Update Avatar',
+                                'Select a photo to update your profile image.',
+                                ToastType.info,
+                              );
+                            },
+                            child: Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: background,
+                                  width: 3,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(
+                                      alpha: 0.20,
+                                    ),
+                                    blurRadius: 10,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.edit_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Positioned(
-                    right: -2,
-                    bottom: -2,
-                    child: GestureDetector(
-                      onTap: () {
-                        Get.find<AppController>().showToast(
-                          'Update Avatar',
-                          'Select a photo to update your profile image.',
-                          ToastType.info,
-                        );
-                      },
-                      child: Container(
-                        width: isNarrow ? 32 : 36,
-                        height: isNarrow ? 32 : 36,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black38,
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
+
+                  const SizedBox(width: 24),
+
+                  // =====================================================
+                  // IDENTITY
+                  // =====================================================
+
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Eyebrow
+                        Row(
+                          children: [
+                            Container(
+                              width: 18,
+                              height: 2,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'EMPLOYEE',
+                              style: TextStyle(
+                                color: secondary,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 2.2,
+                              ),
                             ),
                           ],
                         ),
-                        child: Icon(
-                          Icons.edit_rounded,
-                          color: Colors.white,
-                          size: isNarrow ? 16 : 18,
+
+                        const SizedBox(height: 7),
+
+                        // Name
+                        Text(
+                          displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: foreground,
+                            fontSize: compact ? 22 : 27,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.7,
+                            height: 1,
+                          ),
                         ),
-                      ),
+
+                        const SizedBox(height: 9),
+
+                        // Designation
+                        Text(
+                          displayRole,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: compact ? 12 : 13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+
+                        const SizedBox(height: 9),
+
+                        // Email
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.mail_outline_rounded,
+                              size: 14,
+                              color: secondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                displayEmail,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: secondary,
+                                  fontSize: compact ? 11 : 12,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-              SizedBox(width: isNarrow ? 14 : 20),
-              // User Details Column: Bold Uppercase Name, Red Subtitle, White Email
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      displayName,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: isNarrow ? 20 : 24,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      displayRole,
-                      style: TextStyle(
-                        color: const Color(0xFFE53935), // Red subtitle
-                        fontSize: isNarrow ? 15 : 17,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      displayEmail,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: isNarrow ? 15 : 17,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+
+                  // =====================================================
+                  // DESKTOP ACTION
+                  // =====================================================
+
+                  if (!compact) ...[
+                    const SizedBox(width: 20),
+
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.045)
+                                : Colors.black.withValues(alpha: 0.035),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(
+                              color: border,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.arrow_forward_rounded,
+                            color: foreground.withValues(alpha: 0.55),
+                            size: 20,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Text(
+                          'VIEW',
+                          style: TextStyle(
+                            color: secondary,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
+                ],
+              );
+            },
+          ),
+        ),
+
+        // =========================================================
+        // BOTTOM SIGNATURE
+        // =========================================================
+
+        Positioned(
+          left: 24,
+          right: 24,
+          bottom: 0,
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 2,
+                color: AppColors.primary,
+              ),
+              Expanded(
+                child: Container(
+                  height: 1,
+                  color: border,
                 ),
               ),
             ],
-          );
-        },
-      ),
-    );
-  }
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   void _onUpdatePressed() {
     FocusManager.instance.primaryFocus?.unfocus();
