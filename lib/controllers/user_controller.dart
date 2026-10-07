@@ -21,6 +21,11 @@ class UserController extends GetxController {
   final RxBool isEmployeeExperiencesLoading = false.obs;
   final RxBool isEmployeeExperiencesSaving = false.obs;
   final RxString employeeExperiencesError = ''.obs;
+  final RxList<Map<String, dynamic>> employeeEducations =
+      <Map<String, dynamic>>[].obs;
+  final RxBool isEmployeeEducationsLoading = false.obs;
+  final RxBool isEmployeeEducationsSaving = false.obs;
+  final RxString employeeEducationsError = ''.obs;
   final box = GetStorage();
 
   Future<void> updateEmployeeProfile({
@@ -355,6 +360,148 @@ class UserController extends GetxController {
     }
   }
 
+  Future<void> fetchEmployeeEducations() async {
+    if (currentUser.value == null) return;
+
+    isEmployeeEducationsLoading.value = true;
+    employeeEducationsError.value = '';
+    try {
+      final response = await ApiRepo.apiGet(
+        apiPath: 'employeeapp/employee-educations',
+        showToast: false,
+      );
+      if (response is Map &&
+          (response['success'] == true || response['status'] == 'success') &&
+          response['data'] is List) {
+        final records = response['data'] as List;
+        if (records.any((education) => education is! Map)) {
+          throw const FormatException(
+            'Employee education response contains an invalid record.',
+          );
+        }
+        employeeEducations.assignAll(
+          records.map((education) => Map<String, dynamic>.from(education)),
+        );
+      } else {
+        employeeEducationsError.value = response is Map
+            ? response['message']?.toString() ??
+                  'Unable to load education information. Please try again.'
+            : response is String && response.isNotEmpty
+            ? response
+            : 'Unable to load education information. Please try again.';
+        log('Unable to load employee educations: $response');
+        ToastService.showErrorToast(employeeEducationsError.value);
+      }
+    } catch (error, stackTrace) {
+      employeeEducationsError.value =
+          'Unable to load education information. Please try again.';
+      log('Error fetching employee educations: $error', stackTrace: stackTrace);
+      ToastService.showErrorToast(employeeEducationsError.value);
+    } finally {
+      isEmployeeEducationsLoading.value = false;
+    }
+  }
+
+  Future<void> updateEmployeeEducation({
+    required String employeeId,
+    required String degreeType,
+    required String institution,
+    required String specialization,
+    required String startDate,
+    required String endDate,
+    required bool isCreate,
+    String? educationId,
+    bool finishAfterSuccess = true,
+  }) async {
+    if (isEmployeeEducationsSaving.value) return;
+    employeeEducationsError.value = '';
+
+    final parsedEmployeeId = int.tryParse(employeeId);
+    final parsedDegreeType = int.tryParse(degreeType);
+    if (parsedEmployeeId == null) {
+      employeeEducationsError.value = 'Employee ID must be a valid number.';
+    } else if (parsedDegreeType == null ||
+        parsedDegreeType < 1 ||
+        parsedDegreeType > 7) {
+      employeeEducationsError.value = 'Select a valid degree type.';
+    } else {
+      final requiredFields = <String, String>{
+        'Institution': institution,
+        'Specialization': specialization,
+        'Start date': startDate,
+      };
+      final missingField = requiredFields.entries
+          .where((field) => field.value.trim().isEmpty)
+          .firstOrNull;
+      if (missingField != null) {
+        employeeEducationsError.value = '${missingField.key} is required.';
+      }
+    }
+    if (employeeEducationsError.isNotEmpty) {
+      ToastService.showErrorToast(employeeEducationsError.value);
+      return;
+    }
+
+    final parsedStartDate = DateTime.tryParse(startDate);
+    final parsedEndDate = endDate.isEmpty ? null : DateTime.tryParse(endDate);
+    if (parsedStartDate == null ||
+        parsedStartDate.toIso8601String().substring(0, 10) != startDate ||
+        (endDate.isNotEmpty &&
+            (parsedEndDate == null ||
+                parsedEndDate.toIso8601String().substring(0, 10) != endDate))) {
+      employeeEducationsError.value = 'Enter valid education dates.';
+      ToastService.showErrorToast(employeeEducationsError.value);
+      return;
+    }
+
+    final payload = <String, dynamic>{
+      'employee_id': parsedEmployeeId,
+      'degree_type': parsedDegreeType,
+      'institution': institution.trim(),
+      'specialization': specialization.trim(),
+      'start_date': startDate,
+      'end_date': endDate,
+    };
+    if (!isCreate) {
+      payload['_method'] = 'PATCH';
+    }
+
+    isEmployeeEducationsSaving.value = true;
+    try {
+      final response = await ApiRepo.apiPost(
+        apiPath: isCreate
+            ? 'employeeapp/employee-educations'
+            : educationId == null
+            ? 'employeeapp/employee-educations/{id}'
+            : 'employeeapp/employee-educations/$educationId',
+        data: payload,
+        showToast: true,
+      );
+      if (response is Map &&
+          (response['success'] == true || response['status'] == 'success')) {
+        if (finishAfterSuccess) {
+          await fetchEmployeeEducations();
+          if (!isCreate) Get.back();
+        }
+      } else {
+        employeeEducationsError.value = response is Map
+            ? response['message']?.toString() ??
+                  'Unable to save education information. Please try again.'
+            : response is String && response.isNotEmpty
+            ? response
+            : 'Unable to save education information. Please try again.';
+        ToastService.showErrorToast(employeeEducationsError.value);
+      }
+    } catch (error, stackTrace) {
+      employeeEducationsError.value =
+          'Unable to save education information. Please try again.';
+      log('Error saving employee education: $error', stackTrace: stackTrace);
+      ToastService.showErrorToast(employeeEducationsError.value);
+    } finally {
+      isEmployeeEducationsSaving.value = false;
+    }
+  }
+
   Future<void> updateEmployeeExperience({
     required String employeeId,
     required String experienceTitle,
@@ -366,6 +513,7 @@ class UserController extends GetxController {
     required String description,
     bool finishAfterSuccess = true,
     bool isCreate = false,
+    String? experienceId,
   }) async {
     if (isEmployeeExperiencesSaving.value) return;
     employeeExperiencesError.value = '';
@@ -434,7 +582,9 @@ class UserController extends GetxController {
       final response = await ApiRepo.apiPost(
         apiPath: isCreate
             ? 'employeeapp/employee-experiences'
-            : 'employeeapp/employee-experiences/{id}',
+            : experienceId == null
+            ? 'employeeapp/employee-experiences/{id}'
+            : 'employeeapp/employee-experiences/$experienceId',
         data: payload,
         showToast: true,
       );
@@ -442,9 +592,17 @@ class UserController extends GetxController {
           (response['success'] == true || response['status'] == 'success')) {
         if (finishAfterSuccess) {
           await fetchEmployeeExperiences();
-          Get.back();
+          if (!isCreate) Get.back();
         }
-      } 
+      } else {
+        employeeExperiencesError.value = response is Map
+            ? response['message']?.toString() ??
+                  'Unable to update experience information. Please try again.'
+            : response is String && response.isNotEmpty
+            ? response
+            : 'Unable to update experience information. Please try again.';
+        ToastService.showErrorToast(employeeExperiencesError.value);
+      }
     } catch (error, stackTrace) {
       employeeExperiencesError.value =
           'Unable to update experience information. Please try again.';
@@ -483,6 +641,8 @@ class UserController extends GetxController {
     employeeFamilyError.value = '';
     employeeExperiences.clear();
     employeeExperiencesError.value = '';
+    employeeEducations.clear();
+    employeeEducationsError.value = '';
     box.write('userData', userData);
     if (currentUser.value != null) {
       setCurrentUser(currentUser.value!);

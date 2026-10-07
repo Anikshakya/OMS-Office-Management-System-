@@ -41,6 +41,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
       userController.fetchEmployeeProfile(),
       userController.fetchEmployeeFamily(),
       userController.fetchEmployeeExperiences(),
+      userController.fetchEmployeeEducations(),
     ]);
   }
 

@@ -37,10 +37,23 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
     'Seasonal': 8,
     'Others': 9,
   };
+  static const _degreeTypeIds = <String, int>{
+    'School': 1,
+    'High School': 2,
+    'Bachelor': 3,
+    'Master': 4,
+    'MPhil': 5,
+    'Training': 6,
+    'Others': 7,
+  };
 
   final _formKey = GlobalKey<FormState>();
   final Map<String, TextEditingController> _controllers = {};
   int _activeTab = 0;
+  bool _isEducationFormVisible = false;
+  int? _editingEducationIndex;
+  bool _isExperienceFormVisible = false;
+  int? _editingExperienceIndex;
 
   List<EmployeeDocument> _documentsList = [];
 
@@ -230,6 +243,16 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
         .key;
   }
 
+  String _degreeTypeLabel(dynamic value) {
+    final id = int.tryParse(value?.toString() ?? '');
+    return _degreeTypeIds.entries
+        .firstWhere(
+          (entry) => entry.value == id,
+          orElse: () => const MapEntry('', 0),
+        )
+        .key;
+  }
+
   String _profileOrControllerValue(String key) {
     final controller = _controllers[key];
     return controller == null ? _value(_profile, key) : controller.text.trim();
@@ -287,29 +310,6 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
     }
   }
 
-  Future<int?> _selectYear(
-    BuildContext context, {
-    required int initialYear,
-    required String title,
-    int minYear = 1940,
-    int? maxYear,
-  }) async {
-    final yearController = TextEditingController(text: '$initialYear');
-    try {
-      final picked = await showCustomCupertinoDatePicker(
-        context: context,
-        controller: yearController,
-        title: title,
-        minDate: DateTime(minYear),
-        maxDate: DateTime(maxYear ?? DateTime.now().year),
-        dateFormat: 'yyyy',
-      );
-      return picked?.year;
-    } finally {
-      yearController.dispose();
-    }
-  }
-
   Widget _selectionPickerField(
     String label,
     String key,
@@ -349,49 +349,6 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
               Icons.arrow_drop_down_rounded,
               color: AppColors.primary,
               size: 24,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _yearPickerField(
-    String label,
-    String key,
-    Map<String, dynamic> values, {
-    required String title,
-    IconData icon = Icons.calendar_today_outlined,
-  }) {
-    final controller = _controllers.putIfAbsent(
-      key,
-      () => TextEditingController(text: _value(values, key)),
-    );
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () async {
-          final parsedYear = int.tryParse(controller.text.trim());
-          final year = await _selectYear(
-            context,
-            initialYear: parsedYear ?? DateTime.now().year,
-            title: title,
-          );
-          if (year != null && mounted) {
-            setState(() => controller.text = '$year');
-          }
-        },
-        borderRadius: BorderRadius.circular(10),
-        child: IgnorePointer(
-          child: AppTextField(
-            label: label,
-            controller: controller,
-            prefixIcon: icon,
-            suffixIcon: const Icon(
-              Icons.calendar_month_rounded,
-              color: AppColors.primary,
-              size: 20,
             ),
           ),
         ),
@@ -1035,52 +992,255 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
   }
 
   Widget _buildQualificationFields(BuildContext context, bool isDark) {
-    final qualifications = _employee.qualifications;
-    if (qualifications.isEmpty) {
-      return _emptyMessage(context, 'No qualifications available.');
+    final userController = Get.find<UserController>();
+    if (userController.isEmployeeEducationsLoading.value) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
+    if (userController.employeeEducationsError.isNotEmpty) {
+      return Column(
+        children: [
+          _emptyMessage(context, userController.employeeEducationsError.value),
+          _buildAddEducationCard(isDark),
+        ],
+      );
+    }
+    if (_isEducationFormVisible) {
+      final education = _editingEducationIndex == null
+          ? null
+          : userController.employeeEducations[_editingEducationIndex!];
+      return _buildEducationForm(education, isDark);
+    }
+
+    final educations = userController.employeeEducations.asMap().entries.where((
+      entry,
+    ) {
+      final id = int.tryParse(entry.value['edu_id']?.toString() ?? '');
+      return id == null || id > 0;
+    }).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var i = 0; i < qualifications.length; i++) ...[
-          _buildSectionLabel(
-            'Qualification ${i + 1}: ${qualifications[i].degree}',
-            isDark,
-          ),
-          GlassContainer(
-            borderRadius: 16,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _field('Degree', 'qualification_${i}_degree', {
-                  'qualification_${i}_degree': qualifications[i].degree,
-                }, icon: Icons.school_outlined),
-                _field(
-                  'Institution',
-                  'qualification_${i}_institution',
-                  {
-                    'qualification_${i}_institution':
-                        qualifications[i].institution,
-                  },
-                  icon: Icons.account_balance_outlined,
-                ),
-                _yearPickerField(
-                  'Year',
-                  'qualification_${i}_year',
-                  {'qualification_${i}_year': qualifications[i].year},
-                  title: 'Select Qualification Year',
-                ),
-                _field(
-                  'Grade / Score',
-                  'qualification_${i}_grade',
-                  {'qualification_${i}_grade': qualifications[i].grade},
-                  icon: Icons.grade_outlined,
-                ),
-              ],
+        if (educations.isEmpty)
+          _emptyMessage(context, 'No qualifications available.'),
+        for (var i = 0; i < educations.length; i++)
+          _buildEducationCard(educations[i].key, educations[i].value, isDark),
+        _buildAddEducationCard(isDark),
+      ],
+    );
+  }
+
+  Widget _buildAddEducationCard(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: InkWell(
+        onTap: () => _openEducationForm(),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.04)
+                : AppColors.primary.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.5),
+              width: 1.5,
             ),
           ),
-          const SizedBox(height: 16),
-        ],
+          child: Column(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Add Qualification',
+                style: AppTypography.titleMedium(isDark).copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Tap to enter a qualification',
+                style: AppTypography.caption(isDark).copyWith(
+                  color: isDark ? Colors.white54 : AppColors.textMutedLight,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEducationCard(
+    int index,
+    Map<String, dynamic> education,
+    bool isDark,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            'Qualification ${index + 1}',
+            style: AppTypography.labelMedium(isDark),
+          ),
+        ),
+        GlassContainer(
+          borderRadius: 16,
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.school_outlined,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      education['degree_type_text']?.toString() ??
+                          _degreeTypeLabel(education['degree_type']),
+                      style: AppTypography.titleMedium(
+                        isDark,
+                      ).copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      education['institution']?.toString() ?? '',
+                      style: AppTypography.bodyMedium(isDark),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      education['specialization']?.toString() ?? '',
+                      style: AppTypography.caption(isDark),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      [
+                            education['start_date']?.toString(),
+                            education['end_date']?.toString(),
+                          ]
+                          .where((date) => date != null && date.isNotEmpty)
+                          .join(' – '),
+                      style: AppTypography.caption(isDark).copyWith(
+                        color: isDark
+                            ? Colors.white54
+                            : AppColors.textMutedLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Edit Qualification',
+                onPressed: () =>
+                    _openEducationForm(education: education, index: index),
+                icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildEducationForm(Map<String, dynamic>? education, bool isDark) {
+    final values = <String, dynamic>{
+      'education_form_degree_type': _degreeTypeLabel(education?['degree_type']),
+      'education_form_institution': education?['institution'],
+      'education_form_specialization': education?['specialization'],
+      'education_form_start_date': education?['start_date'],
+      'education_form_end_date': education?['end_date'],
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel(
+          _editingEducationIndex == null
+              ? 'Add Qualification'
+              : 'Edit Qualification',
+          isDark,
+        ),
+        GlassContainer(
+          borderRadius: 16,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _selectionPickerField(
+                'Degree Type *',
+                'education_form_degree_type',
+                values,
+                _degreeTypeIds.keys.toList(),
+                title: 'Select Degree Type',
+                icon: Icons.school_outlined,
+                requiredField: true,
+              ),
+              _field(
+                'Institution *',
+                'education_form_institution',
+                values,
+                icon: Icons.account_balance_outlined,
+                requiredField: true,
+              ),
+              _field(
+                'Specialization *',
+                'education_form_specialization',
+                values,
+                icon: Icons.menu_book_outlined,
+                requiredField: true,
+              ),
+              _datePickerField(
+                'Start Date *',
+                'education_form_start_date',
+                values,
+                title: 'Select Education Start Date',
+                icon: Icons.event_available_outlined,
+                requiredField: true,
+              ),
+              _datePickerField(
+                'End Date',
+                'education_form_end_date',
+                values,
+                title: 'Select Education End Date',
+                icon: Icons.event_busy_outlined,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        AppButton.outlined(label: 'Cancel', onPressed: _closeEducationForm),
       ],
     );
   }
@@ -1095,46 +1255,189 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
         ),
       );
     }
+    if (_isExperienceFormVisible) {
+      final experience = _editingExperienceIndex == null
+          ? null
+          : userController.employeeExperiences[_editingExperienceIndex!];
+      return _buildExperienceForm(experience, isDark);
+    }
     if (userController.employeeExperiencesError.isNotEmpty) {
-      return _emptyMessage(
-        context,
-        userController.employeeExperiencesError.value,
+      return Column(
+        children: [
+          _emptyMessage(context, userController.employeeExperiencesError.value),
+          _buildAddExperienceCard(isDark),
+        ],
       );
     }
-    final experiences = userController.employeeExperiences.isEmpty
-        ? <Map<String, dynamic>>[<String, dynamic>{}]
-        : userController.employeeExperiences.toList();
+    final experiences = userController.employeeExperiences
+        .asMap()
+        .entries
+        .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var i = 0; i < experiences.length; i++)
-          _buildExperienceCard(i, experiences[i], isDark),
+        if (experiences.isEmpty)
+          _emptyMessage(context, 'No experience records available.'),
+        for (final entry in experiences)
+          _buildExperienceSummaryCard(entry.key, entry.value, isDark),
+        _buildAddExperienceCard(isDark),
       ],
     );
   }
 
-  Widget _buildExperienceCard(
+  Widget _buildAddExperienceCard(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: InkWell(
+        onTap: () => _openExperienceForm(),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.04)
+                : AppColors.primary.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Add Experience',
+                style: AppTypography.titleMedium(isDark).copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Tap to enter an experience',
+                style: AppTypography.caption(isDark).copyWith(
+                  color: isDark ? Colors.white54 : AppColors.textMutedLight,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExperienceSummaryCard(
     int index,
     Map<String, dynamic> experience,
     bool isDark,
   ) {
-    final values = <String, dynamic>{
-      'experience_${index}_experience_title': experience['experience_title'],
-      'experience_${index}_employment_type': _employmentTypeLabel(
-        experience['employment_type'],
-      ),
-      'experience_${index}_company': experience['company'],
-      'experience_${index}_start_date': experience['start_date'],
-      'experience_${index}_end_date': experience['end_date'],
-      'experience_${index}_address': experience['address'],
-      'experience_${index}_description': experience['description'],
-    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GlassContainer(
+          borderRadius: 16,
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.work_outline_rounded,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      experience['experience_title']?.toString() ?? '',
+                      style: AppTypography.titleMedium(
+                        isDark,
+                      ).copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      experience['company']?.toString() ?? '',
+                      style: AppTypography.bodyMedium(isDark),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _employmentTypeLabel(experience['employment_type']),
+                      style: AppTypography.caption(isDark),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      [
+                            experience['start_date']?.toString(),
+                            experience['end_date']?.toString(),
+                          ]
+                          .where((date) => date != null && date.isNotEmpty)
+                          .join(' – '),
+                      style: AppTypography.caption(isDark).copyWith(
+                        color: isDark
+                            ? Colors.white54
+                            : AppColors.textMutedLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Edit Experience',
+                onPressed: () =>
+                    _openExperienceForm(experience: experience, index: index),
+                icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
 
+  Widget _buildExperienceForm(Map<String, dynamic>? experience, bool isDark) {
+    final values = <String, dynamic>{
+      'experience_form_experience_title': experience?['experience_title'],
+      'experience_form_employment_type': _employmentTypeLabel(
+        experience?['employment_type'],
+      ),
+      'experience_form_company': experience?['company'],
+      'experience_form_start_date': experience?['start_date'],
+      'experience_form_end_date': experience?['end_date'],
+      'experience_form_address': experience?['address'],
+      'experience_form_description': experience?['description'],
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionLabel(
-          'Experience ${index + 1}: ${experience['company'] ?? ''}',
+          _editingExperienceIndex == null
+              ? 'Add Experience'
+              : 'Edit Experience',
           isDark,
         ),
         GlassContainer(
@@ -1144,14 +1447,14 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
             children: [
               _field(
                 'Experience Title *',
-                'experience_${index}_experience_title',
+                'experience_form_experience_title',
                 values,
                 icon: Icons.work_outline_rounded,
                 requiredField: true,
               ),
               _selectionPickerField(
                 'Employment Type *',
-                'experience_${index}_employment_type',
+                'experience_form_employment_type',
                 values,
                 _employmentTypeIds.keys.toList(),
                 title: 'Select Employment Type',
@@ -1160,14 +1463,14 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
               ),
               _field(
                 'Company *',
-                'experience_${index}_company',
+                'experience_form_company',
                 values,
                 icon: Icons.business_outlined,
                 requiredField: true,
               ),
               _datePickerField(
                 'Start Date *',
-                'experience_${index}_start_date',
+                'experience_form_start_date',
                 values,
                 title: 'Select Experience Start Date',
                 icon: Icons.event_available_outlined,
@@ -1175,7 +1478,7 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
               ),
               _datePickerField(
                 'End Date *',
-                'experience_${index}_end_date',
+                'experience_form_end_date',
                 values,
                 title: 'Select Experience End Date',
                 icon: Icons.event_busy_outlined,
@@ -1183,14 +1486,14 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
               ),
               _field(
                 'Address *',
-                'experience_${index}_address',
+                'experience_form_address',
                 values,
                 icon: Icons.location_on_outlined,
                 requiredField: true,
               ),
               _field(
                 'Description',
-                'experience_${index}_description',
+                'experience_form_description',
                 values,
                 icon: Icons.notes_outlined,
                 maxLines: 3,
@@ -1198,7 +1501,8 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+        AppButton.outlined(label: 'Cancel', onPressed: _closeExperienceForm),
       ],
     );
   }
@@ -1606,6 +1910,11 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
       _saveEmployeeExperiences();
       return;
     }
+    if (_activeTab == 3) {
+      if (!(_formKey.currentState?.validate() ?? false)) return;
+      _saveEmployeeEducations();
+      return;
+    }
 
     const sections = [
       'Personal Information',
@@ -1669,37 +1978,139 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
     final employeeId = _profileOrControllerValue('employee_id').isNotEmpty
         ? _profileOrControllerValue('employee_id')
         : _employee.id;
-    final experiences = userController.employeeExperiences.isEmpty
-        ? <Map<String, dynamic>>[<String, dynamic>{}]
-        : userController.employeeExperiences.toList();
-    final isCreate = userController.employeeExperiences.isEmpty;
+    final isCreate = _editingExperienceIndex == null;
+    final experience = isCreate
+        ? null
+        : userController.employeeExperiences[_editingExperienceIndex!];
 
     userController.employeeExperiencesError.value = '';
-    for (var i = 0; i < experiences.length; i++) {
-      await userController.updateEmployeeExperience(
-        employeeId: employeeId,
-        experienceTitle: _controllerValue('experience_${i}_experience_title'),
-        employmentType:
-            _employmentTypeIds[_controllerValue(
-                  'experience_${i}_employment_type',
-                )]
-                ?.toString() ??
-            '',
-        company: _controllerValue('experience_${i}_company'),
-        startDate: _controllerValue('experience_${i}_start_date'),
-        endDate: _controllerValue('experience_${i}_end_date'),
-        address: _controllerValue('experience_${i}_address'),
-        description: _controllerValue('experience_${i}_description'),
-        finishAfterSuccess: i == experiences.length - 1,
-        isCreate: isCreate,
-      );
-      if (userController.employeeExperiencesError.isNotEmpty || !mounted) {
-        return;
-      }
+    await userController.updateEmployeeExperience(
+      employeeId: employeeId,
+      experienceTitle: _controllerValue('experience_form_experience_title'),
+      employmentType:
+          _employmentTypeIds[_controllerValue(
+                'experience_form_employment_type',
+              )]
+              ?.toString() ??
+          '',
+      company: _controllerValue('experience_form_company'),
+      startDate: _controllerValue('experience_form_start_date'),
+      endDate: _controllerValue('experience_form_end_date'),
+      address: _controllerValue('experience_form_address'),
+      description: _controllerValue('experience_form_description'),
+      finishAfterSuccess: false,
+      isCreate: isCreate,
+      experienceId:
+          (experience?['experience_id'] ??
+                  experience?['employee_experience_id'] ??
+                  experience?['id'])
+              ?.toString(),
+    );
+    if (userController.employeeExperiencesError.isNotEmpty || !mounted) {
+      return;
     }
+    await userController.fetchEmployeeExperiences();
+    if (!mounted) return;
+    _closeExperienceForm();
+  }
+
+  Future<void> _saveEmployeeEducations() async {
+    final userController = Get.find<UserController>();
+    final employeeId = _profileOrControllerValue('employee_id').isNotEmpty
+        ? _profileOrControllerValue('employee_id')
+        : _employee.id;
+    final isCreate = _editingEducationIndex == null;
+    final education = isCreate
+        ? null
+        : userController.employeeEducations[_editingEducationIndex!];
+
+    userController.employeeEducationsError.value = '';
+    await userController.updateEmployeeEducation(
+      employeeId: employeeId,
+      degreeType:
+          _degreeTypeIds[_controllerValue('education_form_degree_type')]
+              ?.toString() ??
+          '',
+      institution: _controllerValue('education_form_institution'),
+      specialization: _controllerValue('education_form_specialization'),
+      startDate: _controllerValue('education_form_start_date'),
+      endDate: _controllerValue('education_form_end_date'),
+      isCreate: isCreate,
+      educationId: education?['edu_id']?.toString(),
+      finishAfterSuccess: false,
+    );
+    if (userController.employeeEducationsError.isNotEmpty || !mounted) {
+      return;
+    }
+    await userController.fetchEmployeeEducations();
+    if (!mounted) return;
+    _closeEducationForm();
   }
 
   String _controllerValue(String key) => _controllers[key]?.text.trim() ?? '';
+
+  void _openEducationForm({Map<String, dynamic>? education, int? index}) {
+    const formFields = {
+      'degree_type': 'degree_type',
+      'institution': 'institution',
+      'specialization': 'specialization',
+      'start_date': 'start_date',
+      'end_date': 'end_date',
+    };
+    for (final entry in formFields.entries) {
+      final key = 'education_form_${entry.key}';
+      final controller = _controllers.putIfAbsent(
+        key,
+        () => TextEditingController(),
+      );
+      controller.text = entry.key == 'degree_type'
+          ? _degreeTypeLabel(education?[entry.value])
+          : education?[entry.value]?.toString() ?? '';
+    }
+    setState(() {
+      _editingEducationIndex = index;
+      _isEducationFormVisible = true;
+    });
+  }
+
+  void _closeEducationForm() {
+    setState(() {
+      _editingEducationIndex = null;
+      _isEducationFormVisible = false;
+    });
+  }
+
+  void _openExperienceForm({Map<String, dynamic>? experience, int? index}) {
+    const fields = {
+      'experience_title': 'experience_title',
+      'employment_type': 'employment_type',
+      'company': 'company',
+      'start_date': 'start_date',
+      'end_date': 'end_date',
+      'address': 'address',
+      'description': 'description',
+    };
+    for (final entry in fields.entries) {
+      final controller = _controllers.putIfAbsent(
+        'experience_form_${entry.key}',
+        TextEditingController.new,
+      );
+      controller.text = entry.key == 'employment_type'
+          ? _employmentTypeLabel(experience?[entry.value])
+          : experience?[entry.value]?.toString() ?? '';
+    }
+    setState(() {
+      _editingExperienceIndex = index;
+      _isExperienceFormVisible = true;
+    });
+  }
+
+  void _closeExperienceForm() {
+    setState(() {
+      _editingExperienceIndex = null;
+      _isExperienceFormVisible = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1749,19 +2160,24 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
 
                 // 4. Submit / Save Button
                 Obx(() {
-                  if (_activeTab == 1) {
+                  if (_activeTab == 1 ||
+                      (_activeTab == 3 && !_isEducationFormVisible) ||
+                      (_activeTab == 4 && !_isExperienceFormVisible)) {
                     return const SizedBox.shrink();
                   }
 
                   final userController = Get.find<UserController>();
                   final isSaving = switch (_activeTab) {
+                    3 => userController.isEmployeeEducationsSaving.value,
                     4 => userController.isEmployeeExperiencesSaving.value,
                     5 => userController.isEmployeeFamilySaving.value,
                     _ => userController.isEmployeeProfileSaving.value,
                   };
                   final label = switch (_activeTab) {
+                    3 =>
+                      '${_editingEducationIndex == null ? 'Add' : 'Update'} Qualification',
                     4 =>
-                      '${userController.employeeExperiences.isEmpty ? 'Add' : 'Update'} Experience Details',
+                      '${_editingExperienceIndex == null ? 'Add' : 'Update'} Experience',
                     5 =>
                       '${_hasFamilyRecord ? 'Update' : 'Add'} Family Details',
                     _ =>
@@ -1770,8 +2186,9 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                   return AppButton.primary(
                     label: label,
                     icon:
-                        (_activeTab == 4 &&
-                                userController.employeeExperiences.isEmpty) ||
+                        (_activeTab == 3 && _editingEducationIndex == null) ||
+                            (_activeTab == 4 &&
+                                _editingExperienceIndex == null) ||
                             (_activeTab == 5 && !_hasFamilyRecord)
                         ? Icons.add_rounded
                         : Icons.save_rounded,
