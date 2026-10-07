@@ -439,6 +439,7 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
     int maxLines = 1,
     bool requiredField = false,
     bool integerField = false,
+    bool? isReadOnly,
   }) {
     final controller = _controllers.putIfAbsent(
       key,
@@ -451,6 +452,7 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
         controller: controller,
         prefixIcon: icon,
         maxLines: maxLines,
+        readOnly: isReadOnly ?? false,
         validator: requiredField
             ? (value) {
                 final requiredError = _requiredValidator(value);
@@ -751,18 +753,21 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                 'current_designation_name',
                 _profile,
                 icon: Icons.work_outline_rounded,
+                isReadOnly: true
               ),
               _field(
                 'First Designation',
                 'first_designation_name',
                 _profile,
                 icon: Icons.work_history_outlined,
+                isReadOnly: true
               ),
               _field(
                 'Previous Designation',
                 'previous_designation_name',
                 _profile,
                 icon: Icons.history_edu_rounded,
+                isReadOnly: true
               ),
             ],
           ),
@@ -780,6 +785,7 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                 'supervisor_ids_text',
                 _profile,
                 icon: Icons.supervisor_account_outlined,
+                isReadOnly: true
               ),
             ],
           ),
@@ -1207,7 +1213,7 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                         width: isNarrow ? 32 : 36,
                         height: isNarrow ? 32 : 36,
                         decoration: const BoxDecoration(
-                          color: Color(0xFFE53935), // Vibrant Red edit circle
+                          color: AppColors.primary,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
@@ -1388,6 +1394,10 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
 
                 // 4. Submit / Save Button
                 Obx(() {
+                  if (_activeTab == 1) {
+                    return const SizedBox.shrink();
+                  }
+
                   final userController = Get.find<UserController>();
                   final isSaving = _activeTab == 5
                       ? userController.isEmployeeFamilySaving.value

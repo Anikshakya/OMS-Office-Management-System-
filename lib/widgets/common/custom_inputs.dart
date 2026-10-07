@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 
@@ -15,6 +16,7 @@ class AppTextField extends StatelessWidget {
   final bool enabled;
   final String? initialValue;
   final FormFieldValidator<String>? validator;
+  final bool? readOnly;
 
   const AppTextField({
     super.key,
@@ -30,6 +32,7 @@ class AppTextField extends StatelessWidget {
     this.enabled = true,
     this.initialValue,
     this.validator,
+    this.readOnly,
   });
 
   @override
@@ -58,6 +61,7 @@ class AppTextField extends StatelessWidget {
           maxLines: maxLines,
           enabled: enabled,
           validator: validator,
+          readOnly: readOnly ?? false,
           style: AppTypography.bodyLarge(isDark),
           decoration: InputDecoration(
             hintText: hint,
