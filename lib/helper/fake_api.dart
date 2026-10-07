@@ -3,25 +3,11 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
-/// A request the app sent through Dio, captured for assertions.
-class RecordedRequest {
-  RecordedRequest({
-    required this.method,
-    required this.path,
-    required this.headers,
-    required this.body,
-  });
-
-  final String method;
-  final String path;
-  final Map<String, dynamic> headers;
-  final dynamic body;
-}
-
 /// Replaces Dio's real network layer so the integration tests are fast,
 /// deterministic and don't need the live server (http://110.44.126.55:8404).
 ///
-/// Install it with:  `dio.httpClientAdapter = FakeApiAdapter();`
+/// Installed automatically by `launchApp()` unless the tests are started with
+/// `--dart-define=REAL_API=true` (see support/test_helpers.dart).
 ///
 /// It answers the three endpoints the app uses:
 ///   POST auth/login
@@ -42,13 +28,6 @@ class FakeApiAdapter implements HttpClientAdapter {
   /// Simulated server latency, so loading states are really exercised.
   final Duration latency;
 
-  /// Every request that reached the adapter, in order.
-  final List<RecordedRequest> requests = [];
-
-  /// Requests whose path ends with [pathSuffix], e.g. `requestsTo('auth/login')`.
-  List<RecordedRequest> requestsTo(String pathSuffix) =>
-      requests.where((r) => r.path.endsWith(pathSuffix)).toList();
-
   @override
   Future<ResponseBody> fetch(
     RequestOptions options,
@@ -57,15 +36,6 @@ class FakeApiAdapter implements HttpClientAdapter {
   ) async {
     final method = options.method.toUpperCase();
     final path = options.uri.path;
-
-    requests.add(
-      RecordedRequest(
-        method: method,
-        path: path,
-        headers: Map<String, dynamic>.from(options.headers),
-        body: options.data,
-      ),
-    );
 
     await Future<void>.delayed(latency);
 

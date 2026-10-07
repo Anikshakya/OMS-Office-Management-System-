@@ -10,6 +10,8 @@ import 'package:oms/screens/login_page.dart';
 class AuthController extends GetxController {
   final RxBool isLoginLoading = false.obs;
   final RxBool isLogoutLoading = false.obs;
+  final RxBool isForgotLoading = false.obs;
+  final RxBool isResetLoading = false.obs;
 
   Future<void> login({required String email, required String password}) async {
     isLoginLoading.value = true;
@@ -65,6 +67,72 @@ class AuthController extends GetxController {
       // Handle successful login, e.g., navigate to the home screen
     } finally {
       isLogoutLoading.value = false;
+    }
+  }
+
+  Future<bool> forgotPassword({required String email}) async {
+    isForgotLoading.value = true;
+    try {
+      var data = {"email": email};
+      var apiResponse = await ApiRepo.apiPost(
+        apiPath: "auth/forgot-password",
+        data: data,
+      );
+
+      // ApiRepo returns a plain String (not a Map) for network/timeout errors,
+      // so check the type before indexing.
+      if (apiResponse is Map && apiResponse["status"] == "success") {
+        ToastService.showSuccessToast(
+          apiResponse["message"] ?? "Password reset link sent to your email.",
+        );
+        return true;
+      } else {
+        ToastService.showErrorToast(
+          "Could not send reset link. Please check your email and try again.",
+        );
+        return false;
+      }
+    } finally {
+      isForgotLoading.value = false;
+    }
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String token,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    isResetLoading.value = true;
+    try {
+      var data = {
+        "email": email,
+        "token": token,
+        "password": password,
+        "password_confirmation": passwordConfirmation,
+      };
+      var apiResponse = await ApiRepo.apiPost(
+        apiPath: "auth/reset-password",
+        data: data,
+      );
+
+      // ApiRepo returns a plain String (not a Map) for network/timeout errors,
+      // so check the type before indexing.
+      if (apiResponse is Map && apiResponse["status"] == "success") {
+        ToastService.showSuccessToast(
+          apiResponse["message"] ??
+              "Password reset successfully. Please sign in.",
+        );
+        Get.offAll(() => const LoginPage());
+      } else {
+        ToastService.showErrorToast(
+          apiResponse is Map && apiResponse["message"] != null
+              ? apiResponse["message"].toString()
+              : "Reset failed. Please check the code and try again.",
+        );
+      }
+    } finally {
+      isResetLoading.value = false;
     }
   }
 }

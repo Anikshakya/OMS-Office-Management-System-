@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:oms/controllers/auth_controller.dart';
+import 'package:oms/screens/forgot_password.dart';
 import 'package:oms/theme/app_typography.dart';
 import 'package:oms/theme/app_colors.dart';
 import 'package:oms/widgets/common/custom_inputs.dart';
@@ -16,8 +17,9 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _emailController =
-      TextEditingController(text: "anik_mi+omsemployee@yonefu.info");
+  final _emailController = TextEditingController(
+    text: "anik_mi+omsemployee@yonefu.info",
+  );
   final _passwordController = TextEditingController(text: "1qaZXCde3@ws");
   final _formKey = GlobalKey<FormState>();
   final AuthController _authController = Get.put(AuthController());
@@ -72,8 +74,10 @@ class _LoginPageState extends State<LoginPage> {
             child: Center(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 32,
+                ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 440),
                   child: Column(
@@ -117,10 +121,7 @@ class _LoginPageState extends State<LoginPage> {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
         child: Container(color: Colors.transparent),
@@ -151,8 +152,7 @@ class _LoginPageState extends State<LoginPage> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () =>
-              setState(() => _obscurePassword = !_obscurePassword),
+          onTap: () => setState(() => _obscurePassword = !_obscurePassword),
           child: Padding(
             padding: const EdgeInsets.all(10.0),
             child: Icon(
@@ -160,8 +160,9 @@ class _LoginPageState extends State<LoginPage> {
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
               size: 20,
-              color:
-                  isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+              color: isDark
+                  ? AppColors.textMutedDark
+                  : AppColors.textMutedLight,
             ),
           ),
         ),
@@ -172,9 +173,9 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildForgotPasswordLink(bool isDark) {
     return Align(
       alignment: Alignment.centerRight,
-      child: GestureDetector(
+      child: InkWell(
         onTap: () {
-          // Action for forgot password
+          Get.to(() => ForgotPasswordPage());
         },
         child: Text(
           'Forgot password?',
@@ -251,17 +252,18 @@ class _LoginHeader extends StatelessWidget {
         Text(
           'Welcome Back',
           textAlign: TextAlign.center,
-          style: AppTypography.displayMedium(isDark).copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.6,
-          ),
+          style: AppTypography.displayMedium(
+            isDark,
+          ).copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.6),
         ),
         const SizedBox(height: 8),
         Text(
           'Sign in to your OMS workspace',
           textAlign: TextAlign.center,
           style: AppTypography.bodyMedium(isDark).copyWith(
-            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.6),
+            color: (isDark ? Colors.white : Colors.black).withValues(
+              alpha: 0.6,
+            ),
           ),
         ),
       ],

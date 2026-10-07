@@ -1,13 +1,93 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-// ignore: depend_on_referenced_packages
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide Response;
 import 'package:get_storage/get_storage.dart';
 import 'package:oms/api_config/dio_client.dart' show dio;
 import 'package:oms/main.dart' as app;
 import 'package:oms/services/cache_service.dart' show StorageKeys;
 
-import 'fake_api.dart';
+// -----------------------------------------------------------------------------
+// Real backend configuration
+// -----------------------------------------------------------------------------
+
+/// Optional overrides for the account used by the tests:
+///   --dart-define=TEST_EMAIL=you@company.com --dart-define=TEST_PASSWORD=...
+/// When omitted, the tests use whatever the login page pre-fills (see
+/// lib/screens/login_page.dart), so no credentials are duplicated here.
+const String _emailOverride = String.fromEnvironment('TEST_EMAIL');
+const String _passwordOverride = String.fromEnvironment('TEST_PASSWORD');
+
+/// The valid test account. Filled in by [launchApp] / [readLoginPagePrefill].
+String? _email;
+String? _password;
+
+String get testEmail => _email ?? (throw StateError('Call launchApp() first.'));
+String get testPassword =>
+    _password ?? (throw StateError('Call launchApp() first.'));
+
+/// Real networks are slow (Dio's own timeout is 30 s), so wait generously.
+const Duration kApiTimeout = Duration(seconds: 45);
+
+/// One HTTP call the app made, with the status code the server answered.
+class RecordedCall {
+  RecordedCall({
+    required this.method,
+    required this.path,
+    required this.requestHeaders,
+    required this.requestBody,
+  });
+
+  final String method;
+  final String path;
+  final Map<String, dynamic> requestHeaders;
+  final dynamic requestBody;
+
+  /// Null until a response (or an error response) arrives.
+  int? statusCode;
+
+  /// The decoded JSON the server answered with (Map/List), if any.
+  dynamic responseData;
+}
+
+/// Dio interceptor that remembers every call the app makes to the real server
+/// (request, status code and response body) so tests can assert on them.
+class ApiRecorder extends Interceptor {
+  final List<RecordedCall> calls = [];
+
+  /// Calls whose path ends with [pathSuffix], e.g. `callsTo('auth/login')`.
+  List<RecordedCall> callsTo(String pathSuffix) =>
+      calls.where((c) => c.path.endsWith(pathSuffix)).toList();
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final call = RecordedCall(
+      method: options.method.toUpperCase(),
+      path: options.uri.path,
+      requestHeaders: Map<String, dynamic>.from(options.headers),
+      requestBody: options.data,
+    );
+    calls.add(call);
+    options.extra['recordedCall'] = call;
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    final call = response.requestOptions.extra['recordedCall'] as RecordedCall?;
+    call?.statusCode = response.statusCode;
+    call?.responseData = response.data;
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    final call = err.requestOptions.extra['recordedCall'] as RecordedCall?;
+    call?.statusCode = err.response?.statusCode;
+    call?.responseData = err.response?.data;
+    handler.next(err);
+  }
+}
 
 // -----------------------------------------------------------------------------
 // Finders for the screens/widgets used in several tests
@@ -19,6 +99,9 @@ Finder get signInButton => find.text('Sign In');
 
 Finder get loginTitle => find.text('Welcome Back');
 Finder get dashboardHeader => find.text('Employees On Leave');
+
+/// "Hello, <name>" banner on the dashboard.
+Finder get greeting => find.textContaining('Hello, ');
 
 /// Bottom-navigation item (labels are unique in the app: Home/Leaves/Team/Profile).
 Finder navTab(String label) => find.text(label);
@@ -41,7 +124,7 @@ Finder dialogText(String label) =>
 Future<void> pumpUntilFound(
   WidgetTester tester,
   Finder finder, {
-  Duration timeout = const Duration(seconds: 20),
+  Duration timeout = kApiTimeout,
   Duration step = const Duration(milliseconds: 100),
 }) async {
   final deadline = DateTime.now().add(timeout);
@@ -60,7 +143,7 @@ Future<void> pumpUntilFound(
 Future<void> pumpUntilGone(
   WidgetTester tester,
   Finder finder, {
-  Duration timeout = const Duration(seconds: 20),
+  Duration timeout = kApiTimeout,
   Duration step = const Duration(milliseconds: 100),
 }) async {
   final deadline = DateTime.now().add(timeout);
@@ -104,10 +187,18 @@ Future<void> settle(
 /// area and a plain `tester.tap` misses it ("would not hit test").
 Future<void> hideKeyboard(WidgetTester tester) async {
   final focused = FocusManager.instance.primaryFocus;
-  if (focused?.context?.widget is! EditableText) return;
-  focused!.unfocus();
-  // Give the keyboard time to animate away and the layout time to grow back.
-  await tester.pump(const Duration(milliseconds: 400));
+  if (focused == null) return;
+
+  // A text field's FocusNode belongs to a Focus widget *inside* EditableText,
+  // so look for EditableText among the ancestors.
+  final isTextInput =
+      focused.context?.findAncestorWidgetOfExactType<EditableText>() != null;
+
+  focused.unfocus();
+  if (isTextInput) {
+    // Give the keyboard time to animate away and the layout time to grow back.
+    await tester.pump(const Duration(milliseconds: 400));
+  }
 }
 
 /// Scrolls every scrollable ancestor so [finder] is in the middle of the view.
@@ -141,46 +232,70 @@ Future<void> typeInto(WidgetTester tester, Finder field, String text) async {
 // App lifecycle
 // -----------------------------------------------------------------------------
 
-/// Starts the real app from scratch with a clean storage and a fake backend.
+/// Starts the app against the REAL server.
 ///
-/// Pass [storedToken] to simulate a user who is already logged in.
-/// Returns the fake API so tests can inspect the requests the app made.
+/// * Clears local storage first (unless [keepStorage]) so the app starts logged out.
+/// * Adds an [ApiRecorder] to the app's global Dio client; nothing else about
+///   the network layer is touched.
 ///
-/// To run against the real server instead, delete the `dio.httpClientAdapter`
-/// line (the tests that depend on [FakeApiAdapter] data will then fail).
-Future<FakeApiAdapter> launchApp(
+/// Returns the recorder so tests can inspect the calls the app made.
+Future<ApiRecorder> launchApp(
   WidgetTester tester, {
-  String? storedToken,
+  bool keepStorage = false,
 }) async {
-  final api = FakeApiAdapter();
-  dio.httpClientAdapter = api;
+  final recorder = ApiRecorder();
+  dio.interceptors.removeWhere((i) => i is ApiRecorder);
+  dio.interceptors.add(recorder); // added last => sees the Authorization header
 
   Get.reset(); // drop controllers from the previous test
-  final storage = GetStorage();
-  await storage.erase();
-  if (storedToken != null) {
-    await storage.write(StorageKeys.apiToken, storedToken);
+  if (!keepStorage) {
+    await GetStorage().erase();
   }
 
   // `main()` is async (GetStorage.init) - it must be awaited, otherwise the
   // first pump can run before runApp() has been called.
   await app.main();
-  return api;
+  return recorder;
+}
+
+/// Resolves the valid test account: `--dart-define` overrides if given,
+/// otherwise the values the login page pre-fills. Call while the login page is
+/// on screen and BEFORE the fields are overwritten.
+void resolveCredentials(WidgetTester tester) {
+  String textOf(Finder field) => tester
+      .widget<EditableText>(
+        find.descendant(of: field, matching: find.byType(EditableText)),
+      )
+      .controller
+      .text;
+
+  _email ??= _emailOverride.isNotEmpty ? _emailOverride : textOf(emailField);
+  _password ??= _passwordOverride.isNotEmpty
+      ? _passwordOverride
+      : textOf(passwordField);
+
+  if (testEmail.isEmpty || testPassword.isEmpty) {
+    throw StateError(
+      'No test account: the login page is not pre-filled. Run with\n'
+      '  --dart-define=TEST_EMAIL=<email> --dart-define=TEST_PASSWORD=<password>',
+    );
+  }
 }
 
 /// Types the credentials and presses "Sign In".
 Future<void> signIn(
   WidgetTester tester, {
-  String email = FakeApiAdapter.validEmail,
-  String password = FakeApiAdapter.validPassword,
+  String? email,
+  String? password,
 }) async {
-  await typeInto(tester, emailField, email);
-  await typeInto(tester, passwordField, password);
+  resolveCredentials(tester);
+  await typeInto(tester, emailField, email ?? testEmail);
+  await typeInto(tester, passwordField, password ?? testPassword);
   await tapVisible(tester, signInButton);
 }
 
-/// Launches the app, logs in with valid credentials and waits for the dashboard.
-Future<FakeApiAdapter> loginToDashboard(WidgetTester tester) async {
+/// Launches the app, logs in with the real test account and waits for the dashboard.
+Future<ApiRecorder> loginToDashboard(WidgetTester tester) async {
   final api = await launchApp(tester);
   await pumpUntilFound(tester, loginTitle);
   await signIn(tester);
