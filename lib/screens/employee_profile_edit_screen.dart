@@ -26,6 +26,18 @@ class EmployeeProfileEditScreen extends StatefulWidget {
 }
 
 class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
+  static const _employmentTypeIds = <String, int>{
+    'Full time': 1,
+    'Part time': 2,
+    'Self employed': 3,
+    'Freelance': 4,
+    'Contract': 5,
+    'Internship': 6,
+    'Apprenticeship': 7,
+    'Seasonal': 8,
+    'Others': 9,
+  };
+
   final _formKey = GlobalKey<FormState>();
   final Map<String, TextEditingController> _controllers = {};
   int _activeTab = 0;
@@ -36,6 +48,11 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
       Get.find<UserController>().employeeProfileData;
   Map<String, dynamic> get _family =>
       Get.find<UserController>().employeeFamilyData;
+  bool get _hasFamilyRecord {
+    final familyId = int.tryParse(_family['family_id']?.toString() ?? '');
+    return _family.isNotEmpty && (familyId == null || familyId > 0);
+  }
+
   Employee get _employee => Get.find<AppDataController>().currentUser;
 
   @override
@@ -203,6 +220,16 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
   String _value(Map<String, dynamic> values, String key) =>
       values[key]?.toString() ?? '';
 
+  String _employmentTypeLabel(dynamic value) {
+    final id = int.tryParse(value?.toString() ?? '');
+    return _employmentTypeIds.entries
+        .firstWhere(
+          (entry) => entry.value == id,
+          orElse: () => const MapEntry('', 0),
+        )
+        .key;
+  }
+
   String _profileOrControllerValue(String key) {
     final controller = _controllers[key];
     return controller == null ? _value(_profile, key) : controller.text.trim();
@@ -361,65 +388,6 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
             label: label,
             controller: controller,
             prefixIcon: icon,
-            suffixIcon: const Icon(
-              Icons.calendar_month_rounded,
-              color: AppColors.primary,
-              size: 20,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _selectExperiencePeriod(
-    TextEditingController controller,
-    int index,
-  ) async {
-    final years = RegExp(r'\d{4}')
-        .allMatches(controller.text)
-        .map((match) => int.parse(match.group(0)!))
-        .toList();
-    final currentYear = DateTime.now().year;
-    final startYear = years.isNotEmpty ? years.first : currentYear;
-    final endYear = years.length > 1 ? years[1] : startYear;
-
-    final selectedStartYear = await _selectYear(
-      context,
-      initialYear: startYear,
-      title: 'Select Experience ${index + 1} Start Year',
-    );
-    if (selectedStartYear == null || !mounted) return;
-
-    final selectedEndYear = await _selectYear(
-      context,
-      initialYear: endYear < selectedStartYear ? selectedStartYear : endYear,
-      title: 'Select Experience ${index + 1} End Year',
-      minYear: selectedStartYear,
-    );
-    if (selectedEndYear != null && mounted) {
-      setState(() {
-        controller.text = '$selectedStartYear - $selectedEndYear';
-      });
-    }
-  }
-
-  Widget _experiencePeriodPickerField(int index, WorkExperience experience) {
-    final key = 'experience_${index}_period';
-    final controller = _controllers.putIfAbsent(
-      key,
-      () => TextEditingController(text: experience.period),
-    );
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () => _selectExperiencePeriod(controller, index),
-        borderRadius: BorderRadius.circular(10),
-        child: IgnorePointer(
-          child: AppTextField(
-            label: 'Period',
-            controller: controller,
-            prefixIcon: Icons.date_range_outlined,
             suffixIcon: const Icon(
               Icons.calendar_month_rounded,
               color: AppColors.primary,
@@ -753,21 +721,21 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                 'current_designation_name',
                 _profile,
                 icon: Icons.work_outline_rounded,
-                isReadOnly: true
+                isReadOnly: true,
               ),
               _field(
                 'First Designation',
                 'first_designation_name',
                 _profile,
                 icon: Icons.work_history_outlined,
-                isReadOnly: true
+                isReadOnly: true,
               ),
               _field(
                 'Previous Designation',
                 'previous_designation_name',
                 _profile,
                 icon: Icons.history_edu_rounded,
-                isReadOnly: true
+                isReadOnly: true,
               ),
             ],
           ),
@@ -785,7 +753,7 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                 'supervisor_ids_text',
                 _profile,
                 icon: Icons.supervisor_account_outlined,
-                isReadOnly: true
+                isReadOnly: true,
               ),
             ],
           ),
@@ -795,6 +763,13 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
   }
 
   Widget _buildFamilyFields(bool isDark) {
+    final familyValues = Map<String, dynamic>.from(_family)
+      ..putIfAbsent(
+        'employee_id',
+        () => _value(_profile, 'employee_id').isNotEmpty
+            ? _value(_profile, 'employee_id')
+            : _employee.id,
+      );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -807,7 +782,7 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
               _field(
                 'Employee ID *',
                 'employee_id',
-                _family,
+                familyValues,
                 icon: Icons.badge_outlined,
                 requiredField: true,
                 integerField: true,
@@ -1085,45 +1060,119 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
   }
 
   Widget _buildExperienceFields(BuildContext context, bool isDark) {
-    final experiences = _employee.experiences;
-    if (experiences.isEmpty) {
-      return _emptyMessage(context, 'No experience records available.');
+    final userController = Get.find<UserController>();
+    if (userController.isEmployeeExperiencesLoading.value) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
+    if (userController.employeeExperiencesError.isNotEmpty) {
+      return _emptyMessage(
+        context,
+        userController.employeeExperiencesError.value,
+      );
+    }
+    final experiences = userController.employeeExperiences.isEmpty
+        ? <Map<String, dynamic>>[<String, dynamic>{}]
+        : userController.employeeExperiences.toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var i = 0; i < experiences.length; i++) ...[
-          _buildSectionLabel(
-            'Experience ${i + 1}: ${experiences[i].company}',
-            isDark,
+        for (var i = 0; i < experiences.length; i++)
+          _buildExperienceCard(i, experiences[i], isDark),
+      ],
+    );
+  }
+
+  Widget _buildExperienceCard(
+    int index,
+    Map<String, dynamic> experience,
+    bool isDark,
+  ) {
+    final values = <String, dynamic>{
+      'experience_${index}_experience_title': experience['experience_title'],
+      'experience_${index}_employment_type': _employmentTypeLabel(
+        experience['employment_type'],
+      ),
+      'experience_${index}_company': experience['company'],
+      'experience_${index}_start_date': experience['start_date'],
+      'experience_${index}_end_date': experience['end_date'],
+      'experience_${index}_address': experience['address'],
+      'experience_${index}_description': experience['description'],
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel(
+          'Experience ${index + 1}: ${experience['company'] ?? ''}',
+          isDark,
+        ),
+        GlassContainer(
+          borderRadius: 16,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _field(
+                'Experience Title *',
+                'experience_${index}_experience_title',
+                values,
+                icon: Icons.work_outline_rounded,
+                requiredField: true,
+              ),
+              _selectionPickerField(
+                'Employment Type *',
+                'experience_${index}_employment_type',
+                values,
+                _employmentTypeIds.keys.toList(),
+                title: 'Select Employment Type',
+                icon: Icons.category_outlined,
+                requiredField: true,
+              ),
+              _field(
+                'Company *',
+                'experience_${index}_company',
+                values,
+                icon: Icons.business_outlined,
+                requiredField: true,
+              ),
+              _datePickerField(
+                'Start Date *',
+                'experience_${index}_start_date',
+                values,
+                title: 'Select Experience Start Date',
+                icon: Icons.event_available_outlined,
+                requiredField: true,
+              ),
+              _datePickerField(
+                'End Date *',
+                'experience_${index}_end_date',
+                values,
+                title: 'Select Experience End Date',
+                icon: Icons.event_busy_outlined,
+                requiredField: true,
+              ),
+              _field(
+                'Address *',
+                'experience_${index}_address',
+                values,
+                icon: Icons.location_on_outlined,
+                requiredField: true,
+              ),
+              _field(
+                'Description',
+                'experience_${index}_description',
+                values,
+                icon: Icons.notes_outlined,
+                maxLines: 3,
+              ),
+            ],
           ),
-          GlassContainer(
-            borderRadius: 16,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _field(
-                  'Company',
-                  'experience_${i}_company',
-                  {'experience_${i}_company': experiences[i].company},
-                  icon: Icons.business_outlined,
-                ),
-                _field('Role', 'experience_${i}_role', {
-                  'experience_${i}_role': experiences[i].role,
-                }, icon: Icons.work_outline_rounded),
-                _experiencePeriodPickerField(i, experiences[i]),
-                _field(
-                  'Summary',
-                  'experience_${i}_summary',
-                  {'experience_${i}_summary': experiences[i].summary},
-                  icon: Icons.notes_outlined,
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
+        ),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -1133,11 +1182,14 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
       padding: const EdgeInsets.symmetric(vertical: 30),
       child: GlassContainer(
         borderRadius: 16,
+        width: double.infinity,
         padding: const EdgeInsets.all(24),
-        child: Text(
-          text,
-          style: AppTypography.bodyMedium(
-            Theme.of(context).brightness == Brightness.dark,
+        child: Center(
+          child: Text(
+            text,
+            style: AppTypography.bodyMedium(
+              Theme.of(context).brightness == Brightness.dark,
+            ),
           ),
         ),
       ),
@@ -1156,387 +1208,360 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
       };
 
   Widget _buildHeaderCard(BuildContext context) {
-  final name = _value(_profile, 'employee_name');
-  final displayName = name.isNotEmpty ? name.toUpperCase() : 'ANIK SHAKYA';
+    final name = _value(_profile, 'employee_name');
+    final displayName = name.isNotEmpty ? name.toUpperCase() : 'ANIK SHAKYA';
 
-  final designation = _value(_profile, 'current_designation_name');
-  final displayRole =
-      designation.isNotEmpty ? designation : 'Employee';
+    final designation = _value(_profile, 'current_designation_name');
+    final displayRole = designation.isNotEmpty ? designation : 'Employee';
 
-  final email = _value(_profile, 'email');
-  final displayEmail =
-      email.isNotEmpty ? email : 'anik_mi@yonefu.info';
+    final email = _value(_profile, 'email');
+    final displayEmail = email.isNotEmpty ? email : 'anik_mi@yonefu.info';
 
-  final avatarUrl = _value(_profile, 'image_name_url');
+    final avatarUrl = _value(_profile, 'image_name_url');
 
-  final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  final background = isDark
-      ? const Color(0xFF111111)
-      : const Color(0xFFFFFFFF);
+    final background = isDark
+        ? const Color(0xFF111111)
+        : const Color(0xFFFFFFFF);
 
-  final foreground = isDark
-      ? Colors.white
-      : const Color(0xFF151515);
+    final foreground = isDark ? Colors.white : const Color(0xFF151515);
 
-  final secondary = isDark
-      ? Colors.white.withValues(alpha: 0.48)
-      : Colors.black.withValues(alpha: 0.45);
+    final secondary = isDark
+        ? Colors.white.withValues(alpha: 0.48)
+        : Colors.black.withValues(alpha: 0.45);
 
-  final border = isDark
-      ? Colors.white.withValues(alpha: 0.07)
-      : Colors.black.withValues(alpha: 0.07);
+    final border = isDark
+        ? Colors.white.withValues(alpha: 0.07)
+        : Colors.black.withValues(alpha: 0.07);
 
-  return Container(
-    width: double.infinity,
-    height: 190,
-    clipBehavior: Clip.antiAlias,
-    decoration: BoxDecoration(
-      color: background,
-      borderRadius: BorderRadius.circular(26),
-      border: Border.all(color: border),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(
-            alpha: isDark ? 0.30 : 0.08,
+    return Container(
+      width: double.infinity,
+      height: 190,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.08),
+            blurRadius: 35,
+            offset: const Offset(0, 18),
           ),
-          blurRadius: 35,
-          offset: const Offset(0, 18),
-        ),
-      ],
-    ),
-    child: Stack(
-      children: [
-        // =========================================================
-        // BACKGROUND TYPOGRAPHIC DETAIL
-        // =========================================================
-
-        Positioned(
-          right: -10,
-          bottom: -32,
-          child: Text(
-            '01',
-            style: TextStyle(
-              fontSize: 170,
-              fontWeight: FontWeight.w900,
-              height: 1,
-              color: AppColors.primary.withValues(alpha: 0.035),
-              letterSpacing: -12,
-            ),
-          ),
-        ),
-
-        // =========================================================
-        // TOP ACCENT LINE
-        // =========================================================
-
-        Positioned(
-          top: 0,
-          left: 28,
-          right: 28,
-          child: Container(
-            height: 2,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary.withValues(alpha: 0),
-                  AppColors.primary,
-                  AppColors.primary.withValues(alpha: 0),
-                ],
+        ],
+      ),
+      child: Stack(
+        children: [
+          // =========================================================
+          // BACKGROUND TYPOGRAPHIC DETAIL
+          // =========================================================
+          Positioned(
+            right: -10,
+            bottom: -32,
+            child: Text(
+              '01',
+              style: TextStyle(
+                fontSize: 170,
+                fontWeight: FontWeight.w900,
+                height: 1,
+                color: AppColors.primary.withValues(alpha: 0.035),
+                letterSpacing: -12,
               ),
             ),
           ),
-        ),
 
-        // =========================================================
-        // CONTENT
-        // =========================================================
+          // =========================================================
+          // TOP ACCENT LINE
+          // =========================================================
+          Positioned(
+            top: 0,
+            left: 28,
+            right: 28,
+            child: Container(
+              height: 2,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0),
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
 
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 22, 20, 20),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 470;
+          // =========================================================
+          // CONTENT
+          // =========================================================
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 22, 20, 20),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 470;
 
-              final avatarSize = compact ? 92.0 : 108.0;
+                final avatarSize = compact ? 92.0 : 108.0;
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // =====================================================
-                  // AVATAR
-                  // =====================================================
-
-                  SizedBox(
-                    width: avatarSize,
-                    height: avatarSize,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        // Outer ring
-                        Container(
-                          width: avatarSize,
-                          height: avatarSize,
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.primary.withValues(
-                                alpha: 0.35,
-                              ),
-                              width: 1,
-                            ),
-                          ),
-                          child: Container(
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // =====================================================
+                    // AVATAR
+                    // =====================================================
+                    SizedBox(
+                      width: avatarSize,
+                      height: avatarSize,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // Outer ring
+                          Container(
+                            width: avatarSize,
+                            height: avatarSize,
                             padding: const EdgeInsets.all(3),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: background,
-                            ),
-                            child: Hero(
-                              tag: employeeProfileAvatarHeroTag,
-                              child: AppAvatar(
-                                url: avatarUrl,
-                                name: displayName,
-                                radius: avatarSize / 2,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Active status
-                        Positioned(
-                          right: 3,
-                          bottom: 5,
-                          child: Container(
-                            width: 17,
-                            height: 17,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF35C759),
-                              shape: BoxShape.circle,
                               border: Border.all(
-                                color: background,
-                                width: 4,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Edit action
-                        Positioned(
-                          left: -5,
-                          bottom: -3,
-                          child: GestureDetector(
-                            onTap: () {
-                              Get.find<AppController>().showToast(
-                                'Update Avatar',
-                                'Select a photo to update your profile image.',
-                                ToastType.info,
-                              );
-                            },
-                            child: Container(
-                              width: 34,
-                              height: 34,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: background,
-                                  width: 3,
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.35,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(
-                                      alpha: 0.20,
-                                    ),
-                                    blurRadius: 10,
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.edit_rounded,
-                                size: 14,
-                                color: Colors.white,
+                                width: 1,
                               ),
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(width: 24),
-
-                  // =====================================================
-                  // IDENTITY
-                  // =====================================================
-
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Eyebrow
-                        Row(
-                          children: [
-                            Container(
-                              width: 18,
-                              height: 2,
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(2),
+                                shape: BoxShape.circle,
+                                color: background,
+                              ),
+                              child: Hero(
+                                tag: employeeProfileAvatarHeroTag,
+                                child: AppAvatar(
+                                  url: avatarUrl,
+                                  name: displayName,
+                                  radius: avatarSize / 2,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'EMPLOYEE',
-                              style: TextStyle(
-                                color: secondary,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 2.2,
+                          ),
+
+                          // Active status
+                          Positioned(
+                            right: 3,
+                            bottom: 5,
+                            child: Container(
+                              width: 17,
+                              height: 17,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF35C759),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: background, width: 4),
                               ),
                             ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 7),
-
-                        // Name
-                        Text(
-                          displayName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: foreground,
-                            fontSize: compact ? 22 : 27,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.7,
-                            height: 1,
                           ),
-                        ),
 
-                        const SizedBox(height: 9),
-
-                        // Designation
-                        Text(
-                          displayRole,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: compact ? 12 : 13,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.1,
-                          ),
-                        ),
-
-                        const SizedBox(height: 9),
-
-                        // Email
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.mail_outline_rounded,
-                              size: 14,
-                              color: secondary,
+                          // Edit action
+                          Positioned(
+                            left: -5,
+                            bottom: -3,
+                            child: GestureDetector(
+                              onTap: () {
+                                Get.find<AppController>().showToast(
+                                  'Update Avatar',
+                                  'Select a photo to update your profile image.',
+                                  ToastType.info,
+                                );
+                              },
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: background,
+                                    width: 3,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.20,
+                                      ),
+                                      blurRadius: 10,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.edit_rounded,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                displayEmail,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 24),
+
+                    // =====================================================
+                    // IDENTITY
+                    // =====================================================
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Eyebrow
+                          Row(
+                            children: [
+                              Container(
+                                width: 18,
+                                height: 2,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'EMPLOYEE',
                                 style: TextStyle(
                                   color: secondary,
-                                  fontSize: compact ? 11 : 12,
-                                  fontWeight: FontWeight.w400,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 2.2,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                            ],
+                          ),
 
-                  // =====================================================
-                  // DESKTOP ACTION
-                  // =====================================================
+                          const SizedBox(height: 7),
 
-                  if (!compact) ...[
-                    const SizedBox(width: 20),
-
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 46,
-                          height: 46,
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.045)
-                                : Colors.black.withValues(alpha: 0.035),
-                            borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: border,
+                          // Name
+                          Text(
+                            displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: foreground,
+                              fontSize: compact ? 22 : 27,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.7,
+                              height: 1,
                             ),
                           ),
-                          child: Icon(
-                            Icons.arrow_forward_rounded,
-                            color: foreground.withValues(alpha: 0.55),
-                            size: 20,
-                          ),
-                        ),
 
-                        const SizedBox(height: 8),
+                          const SizedBox(height: 9),
 
-                        Text(
-                          'VIEW',
-                          style: TextStyle(
-                            color: secondary,
-                            fontSize: 8,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.5,
+                          // Designation
+                          Text(
+                            displayRole,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: compact ? 12 : 13,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.1,
+                            ),
                           ),
-                        ),
-                      ],
+
+                          const SizedBox(height: 9),
+
+                          // Email
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.mail_outline_rounded,
+                                size: 14,
+                                color: secondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  displayEmail,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: secondary,
+                                    fontSize: compact ? 11 : 12,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
+
+                    // =====================================================
+                    // DESKTOP ACTION
+                    // =====================================================
+                    if (!compact) ...[
+                      const SizedBox(width: 20),
+
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.045)
+                                  : Colors.black.withValues(alpha: 0.035),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(color: border),
+                            ),
+                            child: Icon(
+                              Icons.arrow_forward_rounded,
+                              color: foreground.withValues(alpha: 0.55),
+                              size: 20,
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          Text(
+                            'VIEW',
+                            style: TextStyle(
+                              color: secondary,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
-                ],
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
 
-        // =========================================================
-        // BOTTOM SIGNATURE
-        // =========================================================
-
-        Positioned(
-          left: 24,
-          right: 24,
-          bottom: 0,
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 2,
-                color: AppColors.primary,
-              ),
-              Expanded(
-                child: Container(
-                  height: 1,
-                  color: border,
-                ),
-              ),
-            ],
+          // =========================================================
+          // BOTTOM SIGNATURE
+          // =========================================================
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 0,
+            child: Row(
+              children: [
+                Container(width: 42, height: 2, color: AppColors.primary),
+                Expanded(child: Container(height: 1, color: border)),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   void _onUpdatePressed() {
     FocusManager.instance.primaryFocus?.unfocus();
@@ -1548,6 +1573,11 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
     if (_activeTab == 5) {
       if (!(_formKey.currentState?.validate() ?? false)) return;
       _saveEmployeeFamily();
+      return;
+    }
+    if (_activeTab == 4) {
+      if (!(_formKey.currentState?.validate() ?? false)) return;
+      _saveEmployeeExperiences();
       return;
     }
 
@@ -1604,8 +1634,46 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
       motherNameLocale: _profileOrControllerValue('mother_name_locale'),
       grandfatherName: _profileOrControllerValue('grandfather_name'),
       grandmotherName: _profileOrControllerValue('grandmother_name'),
+      isCreate: !_hasFamilyRecord,
     );
   }
+
+  Future<void> _saveEmployeeExperiences() async {
+    final userController = Get.find<UserController>();
+    final employeeId = _profileOrControllerValue('employee_id').isNotEmpty
+        ? _profileOrControllerValue('employee_id')
+        : _employee.id;
+    final experiences = userController.employeeExperiences.isEmpty
+        ? <Map<String, dynamic>>[<String, dynamic>{}]
+        : userController.employeeExperiences.toList();
+    final isCreate = userController.employeeExperiences.isEmpty;
+
+    userController.employeeExperiencesError.value = '';
+    for (var i = 0; i < experiences.length; i++) {
+      await userController.updateEmployeeExperience(
+        employeeId: employeeId,
+        experienceTitle: _controllerValue('experience_${i}_experience_title'),
+        employmentType:
+            _employmentTypeIds[_controllerValue(
+                  'experience_${i}_employment_type',
+                )]
+                ?.toString() ??
+            '',
+        company: _controllerValue('experience_${i}_company'),
+        startDate: _controllerValue('experience_${i}_start_date'),
+        endDate: _controllerValue('experience_${i}_end_date'),
+        address: _controllerValue('experience_${i}_address'),
+        description: _controllerValue('experience_${i}_description'),
+        finishAfterSuccess: i == experiences.length - 1,
+        isCreate: isCreate,
+      );
+      if (userController.employeeExperiencesError.isNotEmpty || !mounted) {
+        return;
+      }
+    }
+  }
+
+  String _controllerValue(String key) => _controllers[key]?.text.trim() ?? '';
 
   @override
   Widget build(BuildContext context) {
@@ -1643,7 +1711,12 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                 const SizedBox(height: 16),
 
                 // 3. Tab Content Form Cards matching Apply Leave UI style
-                Form(key: _formKey, child: _activeFields(context, isDark)),
+                Obx(
+                  () => Form(
+                    key: _formKey,
+                    child: _activeFields(context, isDark),
+                  ),
+                ),
 
                 const SizedBox(height: 24),
 
@@ -1654,13 +1727,27 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                   }
 
                   final userController = Get.find<UserController>();
-                  final isSaving = _activeTab == 5
-                      ? userController.isEmployeeFamilySaving.value
-                      : userController.isEmployeeProfileSaving.value;
+                  final isSaving = switch (_activeTab) {
+                    4 => userController.isEmployeeExperiencesSaving.value,
+                    5 => userController.isEmployeeFamilySaving.value,
+                    _ => userController.isEmployeeProfileSaving.value,
+                  };
+                  final label = switch (_activeTab) {
+                    4 =>
+                      '${userController.employeeExperiences.isEmpty ? 'Add' : 'Update'} Experience Details',
+                    5 =>
+                      '${_hasFamilyRecord ? 'Update' : 'Add'} Family Details',
+                    _ =>
+                      'Update ${['Personal', 'Employment', 'Documents', 'Qualifications', 'Experience', 'Family'][_activeTab]} Details',
+                  };
                   return AppButton.primary(
-                    label:
-                        'Update ${['Personal', 'Employment', 'Documents', 'Qualifications', 'Experience', 'Family'][_activeTab]} Details',
-                    icon: Icons.save_rounded,
+                    label: label,
+                    icon:
+                        (_activeTab == 4 &&
+                                userController.employeeExperiences.isEmpty) ||
+                            (_activeTab == 5 && !_hasFamilyRecord)
+                        ? Icons.add_rounded
+                        : Icons.save_rounded,
                     isFullWidth: true,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     borderRadius: 16,

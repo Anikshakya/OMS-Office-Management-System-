@@ -16,6 +16,11 @@ class UserController extends GetxController {
   final RxBool isEmployeeFamilyLoading = false.obs;
   final RxBool isEmployeeFamilySaving = false.obs;
   final RxString employeeFamilyError = ''.obs;
+  final RxList<Map<String, dynamic>> employeeExperiences =
+      <Map<String, dynamic>>[].obs;
+  final RxBool isEmployeeExperiencesLoading = false.obs;
+  final RxBool isEmployeeExperiencesSaving = false.obs;
+  final RxString employeeExperiencesError = ''.obs;
   final box = GetStorage();
 
   Future<void> updateEmployeeProfile({
@@ -69,9 +74,7 @@ class UserController extends GetxController {
       _ => '',
     };
     if (genderCode.isEmpty || maritalStatusCode.isEmpty) {
-      ToastService.showErrorToast(
-        'Select a valid gender and marital status.',
-      );
+      ToastService.showErrorToast('Select a valid gender and marital status.');
       return;
     }
 
@@ -193,25 +196,18 @@ class UserController extends GetxController {
         apiPath: 'employeeapp/employee-families/{id}',
         showToast: true,
       );
-      if (apiResponse is Map &&
-          apiResponse['status'] == 'success' &&
-          apiResponse['data'] is Map) {
-        employeeFamilyData.assignAll(
-          Map<String, dynamic>.from(apiResponse['data'] as Map),
-        );
-      } else {
-        employeeFamilyError.value = apiResponse is Map
-            ? apiResponse['message']?.toString() ??
-                  'Unable to load family information. Please try again.'
-            : 'Unable to load family information. Please try again.';
-        log('Unable to load employee family: $apiResponse');
-        ToastService.showErrorToast(employeeFamilyError.value);
-      }
+      if (apiResponse is Map && apiResponse['status'] == 'success') {
+        final data = apiResponse['data'];
+        if (data == null) {
+          employeeFamilyData.clear();
+        } else if (data is Map) {
+          employeeFamilyData.assignAll(Map<String, dynamic>.from(data));
+        }
+      } 
     } catch (error, stackTrace) {
       employeeFamilyError.value =
           'Unable to load family information. Please try again.';
       log('Error fetching employee family: $error', stackTrace: stackTrace);
-      ToastService.showErrorToast(employeeFamilyError.value);
     } finally {
       isEmployeeFamilyLoading.value = false;
     }
@@ -228,6 +224,7 @@ class UserController extends GetxController {
     required String motherNameLocale,
     required String grandfatherName,
     required String grandmotherName,
+    bool isCreate = false,
   }) async {
     if (isEmployeeFamilySaving.value) return;
 
@@ -238,7 +235,6 @@ class UserController extends GetxController {
     }
 
     final payload = <String, dynamic>{
-      '_method' : 'PATCH',
       'employee_id': parsedEmployeeId,
       'spouse_name': spouseName,
       'spouse_name_locale': spouseNameLocale,
@@ -250,16 +246,20 @@ class UserController extends GetxController {
       'grandfather_name': grandfatherName,
       'grandmother_name': grandmotherName,
     };
+    if (!isCreate) {
+      payload['_method'] = 'PATCH';
+    }
 
     isEmployeeFamilySaving.value = true;
     try {
       final response = await ApiRepo.apiPost(
-        apiPath: 'employeeapp/employee-families/{id}',
+        apiPath: isCreate ? 'employeeapp/employee-families' : 'employeeapp/employee-families/{id}',
         data: payload,
         showToast: true,
       );
       if (response is Map && response['status'] == 'success') {
         employeeFamilyData.addAll(payload);
+        employeeFamilyData.remove('_method');
         await fetchEmployeeFamily();
         Get.back();
       }
@@ -270,6 +270,147 @@ class UserController extends GetxController {
       );
     } finally {
       isEmployeeFamilySaving.value = false;
+    }
+  }
+
+  Future<void> fetchEmployeeExperiences() async {
+    if (currentUser.value == null) return;
+
+    isEmployeeExperiencesLoading.value = true;
+    employeeExperiencesError.value = '';
+    try {
+      final apiResponse = await ApiRepo.apiGet(
+        apiPath: 'employeeapp/employee-experiences',
+        showToast: true,
+      );
+      if (apiResponse is Map &&
+          (apiResponse['success'] == true ||
+              apiResponse['status'] == 'success') &&
+          apiResponse['data'] is List) {
+        final records = apiResponse['data'] as List;
+        if (records.any((experience) => experience is! Map)) {
+          throw const FormatException(
+            'Employee experience response contains an invalid record.',
+          );
+        }
+        employeeExperiences.assignAll(
+          records.map((experience) => Map<String, dynamic>.from(experience)),
+        );
+      }
+    } catch (error, stackTrace) {
+      employeeExperiencesError.value =
+          'Unable to load experience information. Please try again.';
+      log(
+        'Error fetching employee experiences: $error',
+        stackTrace: stackTrace,
+      );
+      ToastService.showErrorToast(employeeExperiencesError.value);
+    } finally {
+      isEmployeeExperiencesLoading.value = false;
+    }
+  }
+
+  Future<void> updateEmployeeExperience({
+    required String employeeId,
+    required String experienceTitle,
+    required String employmentType,
+    required String company,
+    required String startDate,
+    required String endDate,
+    required String address,
+    required String description,
+    bool finishAfterSuccess = true,
+    bool isCreate = false,
+  }) async {
+    if (isEmployeeExperiencesSaving.value) return;
+    employeeExperiencesError.value = '';
+
+    final parsedEmployeeId = int.tryParse(employeeId);
+    final parsedEmploymentType = int.tryParse(employmentType);
+    if (parsedEmployeeId == null) {
+      employeeExperiencesError.value = 'Employee ID must be a valid number.';
+      ToastService.showErrorToast(employeeExperiencesError.value);
+      return;
+    }
+    if (parsedEmploymentType == null) {
+      employeeExperiencesError.value = 'Select a valid employment type.';
+      ToastService.showErrorToast(employeeExperiencesError.value);
+      return;
+    }
+    if (parsedEmploymentType < 1 || parsedEmploymentType > 9) {
+      employeeExperiencesError.value = 'Select a valid employment type.';
+      ToastService.showErrorToast(employeeExperiencesError.value);
+      return;
+    }
+
+    final requiredFields = <String, String>{
+      'Experience title': experienceTitle,
+      'Company': company,
+      'Start date': startDate,
+      'End date': endDate,
+      'Address': address,
+    };
+    final missingField = requiredFields.entries
+        .where((field) => field.value.trim().isEmpty)
+        .firstOrNull;
+    if (missingField != null) {
+      employeeExperiencesError.value = '${missingField.key} is required.';
+      ToastService.showErrorToast(employeeExperiencesError.value);
+      return;
+    }
+
+    final parsedStartDate = DateTime.tryParse(startDate);
+    final parsedEndDate = DateTime.tryParse(endDate);
+    if (parsedStartDate == null ||
+        parsedStartDate.toIso8601String().substring(0, 10) != startDate ||
+        parsedEndDate == null ||
+        parsedEndDate.toIso8601String().substring(0, 10) != endDate) {
+      employeeExperiencesError.value = 'Enter valid start and end dates.';
+      ToastService.showErrorToast(employeeExperiencesError.value);
+      return;
+    }
+
+    final payload = <String, dynamic>{
+      'employee_id': parsedEmployeeId,
+      'experience_title': experienceTitle.trim(),
+      'employment_type': parsedEmploymentType,
+      'company': company.trim(),
+      'start_date': startDate,
+      'end_date': endDate,
+      'address': address.trim(),
+      'description': description.trim(),
+    };
+    if (!isCreate) {
+      payload['_method'] = 'PATCH';
+    }
+
+    isEmployeeExperiencesSaving.value = true;
+    try {
+      final response = await ApiRepo.apiPost(
+        apiPath: isCreate ? 'employeeapp/employee-experiences' : 'employeeapp/employee-experiences/$parsedEmployeeId',
+        data: payload,
+        showToast: true,
+      );
+      if (response is Map &&
+          (response['success'] == true || response['status'] == 'success')) {
+        if (finishAfterSuccess) {
+          await fetchEmployeeExperiences();
+          Get.back();
+        }
+      } else {
+        employeeExperiencesError.value = response is Map
+            ? response['message']?.toString() ??
+                  'Unable to update experience information. Please try again.'
+            : 'Unable to update experience information. Please try again.';
+        ToastService.showErrorToast(employeeExperiencesError.value);
+      }
+    } catch (error, stackTrace) {
+      employeeExperiencesError.value =
+          'Unable to update experience information. Please try again.';
+      log('Error updating employee experience: $error', stackTrace: stackTrace);
+      ToastService.showErrorToast(employeeExperiencesError.value);
+    } finally {
+      isEmployeeExperiencesSaving.value = false;
     }
   }
 
@@ -299,6 +440,8 @@ class UserController extends GetxController {
     employeeProfileError.value = '';
     employeeFamilyData.clear();
     employeeFamilyError.value = '';
+    employeeExperiences.clear();
+    employeeExperiencesError.value = '';
     box.write('userData', userData);
     if (currentUser.value != null) {
       setCurrentUser(currentUser.value!);

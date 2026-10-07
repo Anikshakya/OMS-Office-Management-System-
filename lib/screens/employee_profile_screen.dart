@@ -40,6 +40,7 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
     await Future.wait([
       userController.fetchEmployeeProfile(),
       userController.fetchEmployeeFamily(),
+      userController.fetchEmployeeExperiences(),
     ]);
   }
 
