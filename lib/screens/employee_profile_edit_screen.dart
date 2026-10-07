@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart' as file_picker;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -26,6 +27,17 @@ class EmployeeProfileEditScreen extends StatefulWidget {
 }
 
 class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
+  static const _documentTypeIds = <String, int>{
+    'Citizenship': 1,
+    'National ID': 2,
+    'Driving License': 3,
+    'Voters ID': 4,
+    'Passport': 5,
+    'PF': 6,
+    'CIT': 7,
+    'SSF': 8,
+    'Others': 9,
+  };
   static const _employmentTypeIds = <String, int>{
     'Full time': 1,
     'Part time': 2,
@@ -54,8 +66,11 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
   int? _editingEducationIndex;
   bool _isExperienceFormVisible = false;
   int? _editingExperienceIndex;
-
-  List<EmployeeDocument> _documentsList = [];
+  bool _isDocumentFormVisible = false;
+  int? _editingDocumentIndex;
+  file_picker.PlatformFile? _selectedDocumentFile;
+  final GlobalKey<FormFieldState<file_picker.PlatformFile>>
+  _documentFileFieldKey = GlobalKey<FormFieldState<file_picker.PlatformFile>>();
 
   Map<String, dynamic> get _profile =>
       Get.find<UserController>().employeeProfileData;
@@ -67,12 +82,6 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
   }
 
   Employee get _employee => Get.find<AppDataController>().currentUser;
-
-  @override
-  void initState() {
-    super.initState();
-    _documentsList = List<EmployeeDocument>.from(_employee.documents);
-  }
 
   @override
   void dispose() {
@@ -131,6 +140,7 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                 // 4. Submit / Save Button
                 Obx(() {
                   if (_activeTab == 1 ||
+                      (_activeTab == 2 && !_isDocumentFormVisible) ||
                       (_activeTab == 3 && !_isEducationFormVisible) ||
                       (_activeTab == 4 && !_isExperienceFormVisible)) {
                     return const SizedBox.shrink();
@@ -138,12 +148,15 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
 
                   final userController = Get.find<UserController>();
                   final isSaving = switch (_activeTab) {
+                    2 => userController.isEmployeeDocumentsSaving.value,
                     3 => userController.isEmployeeEducationsSaving.value,
                     4 => userController.isEmployeeExperiencesSaving.value,
                     5 => userController.isEmployeeFamilySaving.value,
                     _ => userController.isEmployeeProfileSaving.value,
                   };
                   final label = switch (_activeTab) {
+                    2 =>
+                      '${_editingDocumentIndex == null ? 'Add' : 'Update'} Document',
                     3 =>
                       '${_editingEducationIndex == null ? 'Add' : 'Update'} Qualification',
                     4 =>
@@ -159,6 +172,8 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                         (_activeTab == 3 && _editingEducationIndex == null) ||
                             (_activeTab == 4 &&
                                 _editingExperienceIndex == null) ||
+                            (_activeTab == 2 &&
+                                _editingDocumentIndex == null) ||
                             (_activeTab == 5 && !_hasFamilyRecord)
                         ? Icons.add_rounded
                         : Icons.save_rounded,
@@ -174,154 +189,6 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  void _removeDocument(int index) {
-    final removedDoc = _documentsList[index];
-    setState(() {
-      _documentsList.removeAt(index);
-    });
-    Get.find<AppController>().showToast(
-      'Document Removed',
-      '${removedDoc.title} has been deleted.',
-      ToastType.info,
-    );
-  }
-
-  void _showAddDocumentDialog(BuildContext context) {
-    final titleController = TextEditingController();
-    final categoryController = TextEditingController(text: 'Identity');
-    final fileNameController = TextEditingController(text: 'scanned_doc.pdf');
-
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 24,
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: GlassContainer(
-              borderRadius: 20,
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.note_add_rounded,
-                              color: AppColors.primary,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Add New Document',
-                            style: AppTypography.titleMedium(
-                              isDark,
-                            ).copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  AppTextField(
-                    label: 'Document Title *',
-                    controller: titleController,
-                    hint: 'e.g. Passport / Academic Degree',
-                    prefixIcon: Icons.title_rounded,
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    label: 'Category',
-                    controller: categoryController,
-                    hint: 'e.g. Identity, Tax, Academic',
-                    prefixIcon: Icons.category_outlined,
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    label: 'File Name',
-                    controller: fileNameController,
-                    hint: 'e.g. passport_scan.pdf',
-                    prefixIcon: Icons.insert_drive_file_outlined,
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      AppButton.outlined(
-                        label: 'Cancel',
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const SizedBox(width: 12),
-                      AppButton.primary(
-                        label: 'Upload Document',
-                        icon: Icons.add_rounded,
-                        onPressed: () {
-                          final title = titleController.text.trim();
-                          if (title.isEmpty) {
-                            Get.find<AppController>().showToast(
-                              'Validation Error',
-                              'Please enter a document title.',
-                              ToastType.error,
-                            );
-                            return;
-                          }
-                          final now = DateTime.now();
-                          final formattedDate =
-                              '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-                          final newDoc = EmployeeDocument(
-                            title: title,
-                            category: categoryController.text.trim().isNotEmpty
-                                ? categoryController.text.trim()
-                                : 'General',
-                            fileName: fileNameController.text.trim().isNotEmpty
-                                ? fileNameController.text.trim()
-                                : 'document.pdf',
-                            fileSize: '1.2 MB',
-                            uploadedDate: formattedDate,
-                          );
-                          setState(() {
-                            _documentsList.add(newDoc);
-                          });
-                          Navigator.pop(context);
-                          Get.find<AppController>().showToast(
-                            'Document Uploaded',
-                            '$title added successfully.',
-                            ToastType.success,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -938,152 +805,318 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
   }
 
   Widget _buildDocumentFields(BuildContext context, bool isDark) {
+    final userController = Get.find<UserController>();
+    if (userController.isEmployeeDocumentsLoading.value) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    if (_isDocumentFormVisible) {
+      final document = _editingDocumentIndex == null
+          ? null
+          : userController.employeeDocuments[_editingDocumentIndex!];
+      return _buildDocumentForm(document, isDark);
+    }
+    if (userController.employeeDocumentsError.isNotEmpty) {
+      return Column(
+        children: [
+          _emptyMessage(context, userController.employeeDocumentsError.value),
+          _buildAddDocumentCard(isDark),
+        ],
+      );
+    }
+
+    final documents = userController.employeeDocuments.asMap().entries;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel(
-          'Uploaded Documents (${_documentsList.length})',
-          isDark,
-        ),
-        const SizedBox(height: 4),
+        if (userController.employeeDocuments.isEmpty)
+          _emptyMessage(context, 'No documents uploaded yet.'),
+        for (final entry in documents) ...[
+          _buildDocumentSummaryCard(entry.key, entry.value, isDark),
+          const SizedBox(height: 12),
+        ],
+        _buildAddDocumentCard(isDark),
+      ],
+    );
+  }
 
-        // 1. Documents List
-        if (_documentsList.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: GlassContainer(
-              borderRadius: 16,
-              padding: const EdgeInsets.all(20),
-              child: Center(
-                child: Text(
-                  'No documents uploaded yet.',
-                  style: AppTypography.bodyMedium(isDark),
-                ),
-              ),
-            ),
-          )
-        else
-          for (var i = 0; i < _documentsList.length; i++) ...[
-            GlassContainer(
-              borderRadius: 16,
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.picture_as_pdf_rounded,
-                      color: AppColors.primary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _documentsList[i].title,
-                          style: AppTypography.titleMedium(
-                            isDark,
-                          ).copyWith(fontWeight: FontWeight.bold),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${_documentsList[i].category} • ${_documentsList[i].fileName} (${_documentsList[i].fileSize})',
-                          style: AppTypography.caption(isDark),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Uploaded: ${_documentsList[i].uploadedDate}',
-                          style: AppTypography.caption(isDark).copyWith(
-                            color: isDark
-                                ? Colors.white54
-                                : AppColors.textMutedLight,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Delete Document',
-                    icon: const Icon(
-                      Icons.delete_outline_rounded,
-                      color: AppColors.primary,
-                      size: 22,
-                    ),
-                    onPressed: () => _removeDocument(i),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-
-        const SizedBox(height: 8),
-
-        // 2. Add Document Container Card with + Sign
-        InkWell(
-          onTap: () => _showAddDocumentDialog(context),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+  Widget _buildDocumentSummaryCard(
+    int index,
+    Map<String, dynamic> document,
+    bool isDark,
+  ) {
+    final title = document['doc_title']?.toString() ?? 'Document';
+    final type =
+        document['doc_type_text']?.toString() ??
+        _documentTypeLabel(document['doc_type']);
+    final fileName = document['file_name']?.toString() ?? '';
+    final details = <String>[
+      if (type.isNotEmpty) type,
+      if (fileName.isNotEmpty) fileName,
+      if (document['doc_num']?.toString().isNotEmpty ?? false)
+        'No. ${document['doc_num']}',
+      if (document['doc_issued_date']?.toString().isNotEmpty ?? false)
+        'Issued ${document['doc_issued_date']}',
+      if (document['doc_valid_date']?.toString().isNotEmpty ?? false)
+        'Valid until ${document['doc_valid_date']}',
+      if (document['doc_issued_place']?.toString().isNotEmpty ?? false)
+        document['doc_issued_place'].toString(),
+    ];
+    return GlassContainer(
+      borderRadius: 16,
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.04)
-                  : AppColors.primary.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.5),
-                width: 1.5,
-              ),
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
             ),
+            child: const Icon(
+              Icons.description_outlined,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.add_rounded,
-                    color: Colors.white,
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(height: 10),
                 Text(
-                  'Add New Document',
-                  style: AppTypography.titleMedium(isDark).copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                  ),
+                  title,
+                  style: AppTypography.titleMedium(
+                    isDark,
+                  ).copyWith(fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Tap to upload PDF, PNG or JPG files',
-                  style: AppTypography.caption(isDark).copyWith(
-                    color: isDark ? Colors.white54 : AppColors.textMutedLight,
-                  ),
+                  details.join(' • '),
+                  style: AppTypography.caption(isDark),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
+          IconButton(
+            tooltip: 'Edit Document',
+            onPressed: () =>
+                _openDocumentForm(document: document, index: index),
+            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddDocumentCard(bool isDark) => InkWell(
+    onTap: _openDocumentForm,
+    borderRadius: BorderRadius.circular(16),
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.04)
+            : AppColors.primary.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.5),
+          width: 1.5,
         ),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.add_circle_outline,
+            color: AppColors.primary,
+            size: 38,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add Document',
+            style: AppTypography.titleMedium(
+              isDark,
+            ).copyWith(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _buildDocumentForm(Map<String, dynamic>? document, bool isDark) {
+    final values = <String, dynamic>{
+      'document_form_doc_type':
+          document?['doc_type_text']?.toString() ??
+          _documentTypeLabel(document?['doc_type']),
+      'document_form_doc_title': document?['doc_title'],
+      'document_form_page_num': document?['page_num'],
+      'document_form_doc_num': document?['doc_num'],
+      'document_form_doc_issued_date': document?['doc_issued_date'],
+      'document_form_doc_issued_date_locale':
+          document?['doc_issued_date_locale'],
+      'document_form_doc_valid_date': document?['doc_valid_date'],
+      'document_form_doc_issued_place': document?['doc_issued_place'],
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel(
+          document == null ? 'Add Document' : 'Edit Document',
+          isDark,
+        ),
+        GlassContainer(
+          borderRadius: 16,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _selectionPickerField(
+                'Document Type *',
+                'document_form_doc_type',
+                values,
+                _documentTypeIds.keys.toList(),
+                title: 'Select Document Type',
+                icon: Icons.category_outlined,
+                requiredField: true,
+              ),
+              _field(
+                'Document Title *',
+                'document_form_doc_title',
+                values,
+                icon: Icons.title_rounded,
+                requiredField: true,
+              ),
+              _field(
+                'Page Number *',
+                'document_form_page_num',
+                values,
+                icon: Icons.numbers_rounded,
+                requiredField: true,
+                integerField: true,
+              ),
+              _field(
+                'Document Number',
+                'document_form_doc_num',
+                values,
+                icon: Icons.tag_rounded,
+              ),
+              _datePickerField(
+                'Issued Date *',
+                'document_form_doc_issued_date',
+                values,
+                title: 'Select Issued Date',
+                icon: Icons.event_available_outlined,
+                requiredField: true,
+              ),
+              _field(
+                'Issued Date (Local) *',
+                'document_form_doc_issued_date_locale',
+                values,
+                icon: Icons.translate_rounded,
+                requiredField: true,
+              ),
+              _datePickerField(
+                'Valid Date',
+                'document_form_doc_valid_date',
+                values,
+                title: 'Select Valid Date',
+                icon: Icons.event_busy_outlined,
+              ),
+              _field(
+                'Issued Place',
+                'document_form_doc_issued_place',
+                values,
+                icon: Icons.location_on_outlined,
+              ),
+              const SizedBox(height: 4),
+              FormField<file_picker.PlatformFile>(
+                key: _documentFileFieldKey,
+                validator: (file) {
+                  final currentDocument = document;
+                  final existingFile =
+                      currentDocument?['file_name']?.toString() ?? '';
+                  return file != null || existingFile.isNotEmpty
+                      ? null
+                      : 'Choose a document file';
+                },
+                builder: (field) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    InkWell(
+                      onTap: _pickDocumentFile,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: field.hasError
+                                ? Theme.of(context).colorScheme.error
+                                : AppColors.primary.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.upload_file_rounded,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _selectedDocumentFile?.name ??
+                                    document?['file_name']?.toString() ??
+                                    'Select document file *',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.bodyMedium(isDark),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.attach_file_rounded,
+                              color: AppColors.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (field.hasError)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12, top: 6),
+                        child: Text(
+                          field.errorText!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        AppButton.outlined(label: 'Cancel', onPressed: _closeDocumentForm),
       ],
     );
+  }
+
+  Future<void> _pickDocumentFile() async {
+    final file = await file_picker.FilePicker.pickFile();
+    if (file == null || !mounted) return;
+    setState(() => _selectedDocumentFile = file);
+    _documentFileFieldKey.currentState?.didChange(file);
   }
 
   Widget _buildQualificationFields(BuildContext context, bool isDark) {
@@ -1990,6 +2023,11 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
 
   void _onUpdatePressed() {
     FocusManager.instance.primaryFocus?.unfocus();
+    if (_activeTab == 2) {
+      if (!(_formKey.currentState?.validate() ?? false)) return;
+      _saveEmployeeDocument();
+      return;
+    }
     if (_activeTab == 0) {
       if (!(_formKey.currentState?.validate() ?? false)) return;
       _saveEmployeeProfile();
@@ -2137,6 +2175,7 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
     if (userController.employeeEducationsError.isNotEmpty || !mounted) {
       return;
     }
+
     await userController.fetchEmployeeEducations();
     if (!mounted) return;
     _closeEducationForm();
@@ -2205,5 +2244,86 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
       _editingExperienceIndex = null;
       _isExperienceFormVisible = false;
     });
+  }
+
+  String _documentTypeLabel(dynamic value) {
+    final id = int.tryParse(value?.toString() ?? '');
+    return _documentTypeIds.entries
+        .firstWhere(
+          (entry) => entry.value == id,
+          orElse: () => const MapEntry('', 0),
+        )
+        .key;
+  }
+
+  void _openDocumentForm({Map<String, dynamic>? document, int? index}) {
+    const fields = {
+      'doc_type': 'doc_type',
+      'doc_title': 'doc_title',
+      'page_num': 'page_num',
+      'doc_num': 'doc_num',
+      'doc_issued_date': 'doc_issued_date',
+      'doc_issued_date_locale': 'doc_issued_date_locale',
+      'doc_valid_date': 'doc_valid_date',
+      'doc_issued_place': 'doc_issued_place',
+    };
+    for (final entry in fields.entries) {
+      final controller = _controllers.putIfAbsent(
+        'document_form_${entry.key}',
+        TextEditingController.new,
+      );
+      controller.text = entry.key == 'doc_type'
+          ? (document?['doc_type_text']?.toString() ??
+                _documentTypeLabel(document?[entry.value]))
+          : document?[entry.value]?.toString() ?? '';
+    }
+    _selectedDocumentFile = null;
+    _documentFileFieldKey.currentState?.reset();
+    setState(() {
+      _editingDocumentIndex = index;
+      _isDocumentFormVisible = true;
+    });
+  }
+
+  void _closeDocumentForm() {
+    setState(() {
+      _editingDocumentIndex = null;
+      _isDocumentFormVisible = false;
+      _selectedDocumentFile = null;
+    });
+  }
+
+  Future<void> _saveEmployeeDocument() async {
+    final userController = Get.find<UserController>();
+    final employeeId = _profileOrControllerValue('employee_id').isNotEmpty
+        ? _profileOrControllerValue('employee_id')
+        : _employee.id;
+    final isCreate = _editingDocumentIndex == null;
+    final document = isCreate
+        ? null
+        : userController.employeeDocuments[_editingDocumentIndex!];
+    userController.employeeDocumentsError.value = '';
+    await userController.saveEmployeeDocument(
+      employeeId: employeeId,
+      documentType:
+          _documentTypeIds[_controllerValue('document_form_doc_type')]
+              ?.toString() ??
+          '',
+      title: _controllerValue('document_form_doc_title'),
+      pageNumber: _controllerValue('document_form_page_num'),
+      file: _selectedDocumentFile,
+      documentNumber: _controllerValue('document_form_doc_num'),
+      issuedDate: _controllerValue('document_form_doc_issued_date'),
+      issuedDateLocale: _controllerValue(
+        'document_form_doc_issued_date_locale',
+      ),
+      validDate: _controllerValue('document_form_doc_valid_date'),
+      issuedPlace: _controllerValue('document_form_doc_issued_place'),
+      isCreate: isCreate,
+      existingFileName: document?['file_name']?.toString() ?? '',
+      documentId: document?['doc_id']?.toString(),
+    );
+    if (userController.employeeDocumentsError.isNotEmpty || !mounted) return;
+    _closeDocumentForm();
   }
 }

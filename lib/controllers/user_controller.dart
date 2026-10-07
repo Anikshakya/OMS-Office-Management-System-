@@ -1,6 +1,8 @@
 import 'dart:developer';
 
-import 'package:get/get.dart';
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart' as file_picker;
+import 'package:get/get.dart' hide FormData, MultipartFile;
 import 'package:get_storage/get_storage.dart';
 import 'package:oms/api_config/api_repo.dart';
 import 'package:oms/models/employee.dart';
@@ -26,6 +28,11 @@ class UserController extends GetxController {
   final RxBool isEmployeeEducationsLoading = false.obs;
   final RxBool isEmployeeEducationsSaving = false.obs;
   final RxString employeeEducationsError = ''.obs;
+  final RxList<Map<String, dynamic>> employeeDocuments =
+      <Map<String, dynamic>>[].obs;
+  final RxBool isEmployeeDocumentsLoading = false.obs;
+  final RxBool isEmployeeDocumentsSaving = false.obs;
+  final RxString employeeDocumentsError = ''.obs;
   final box = GetStorage();
 
   Future<void> updateEmployeeProfile({
@@ -402,6 +409,166 @@ class UserController extends GetxController {
     }
   }
 
+  Future<void> fetchEmployeeDocuments() async {
+    if (currentUser.value == null) return;
+
+    isEmployeeDocumentsLoading.value = true;
+    employeeDocumentsError.value = '';
+    try {
+      final response = await ApiRepo.apiGet(
+        apiPath: 'employeeapp/employee-documents',
+        showToast: false,
+      );
+      if (response is Map &&
+          (response['success'] == true || response['status'] == 'success') &&
+          response['data'] is List) {
+        final records = response['data'] as List;
+        if (records.any((document) => document is! Map)) {
+          throw const FormatException(
+            'Employee document response contains an invalid record.',
+          );
+        }
+        employeeDocuments.assignAll(
+          records.map((document) => Map<String, dynamic>.from(document)),
+        );
+      } else {
+        employeeDocumentsError.value = response is Map
+            ? response['message']?.toString() ??
+                  'Unable to load employee documents. Please try again.'
+            : response is String && response.isNotEmpty
+            ? response
+            : 'Unable to load employee documents. Please try again.';
+        log('Unable to load employee documents: $response');
+        ToastService.showErrorToast(employeeDocumentsError.value);
+      }
+    } catch (error, stackTrace) {
+      employeeDocumentsError.value =
+          'Unable to load employee documents. Please try again.';
+      log('Error fetching employee documents: $error', stackTrace: stackTrace);
+      ToastService.showErrorToast(employeeDocumentsError.value);
+    } finally {
+      isEmployeeDocumentsLoading.value = false;
+    }
+  }
+
+  Future<void> saveEmployeeDocument({
+    required String employeeId,
+    required String documentType,
+    required String title,
+    required String pageNumber,
+    required file_picker.PlatformFile? file,
+    required String documentNumber,
+    required String issuedDate,
+    required String issuedDateLocale,
+    required String validDate,
+    required String issuedPlace,
+    required bool isCreate,
+    required String existingFileName,
+    String? documentId,
+  }) async {
+    if (isEmployeeDocumentsSaving.value) return;
+    employeeDocumentsError.value = '';
+
+    final parsedEmployeeId = int.tryParse(employeeId);
+    final parsedDocumentType = int.tryParse(documentType);
+    final parsedPageNumber = int.tryParse(pageNumber);
+    if (!isCreate && (documentId == null || documentId.isEmpty)) {
+      employeeDocumentsError.value = 'Document ID is required to update.';
+    } else if (parsedEmployeeId == null) {
+      employeeDocumentsError.value = 'Employee ID must be a valid number.';
+    } else if (parsedDocumentType == null ||
+        parsedDocumentType < 1 ||
+        parsedDocumentType > 9) {
+      employeeDocumentsError.value = 'Select a valid document type.';
+    } else if (parsedPageNumber == null || parsedPageNumber < 1) {
+      employeeDocumentsError.value = 'Enter a valid page number.';
+    } else {
+      final requiredFields = <String, String>{
+        'Document title': title,
+        'Issued date': issuedDate,
+        'Issued date (local)': issuedDateLocale,
+      };
+      final missingField = requiredFields.entries
+          .where((field) => field.value.trim().isEmpty)
+          .firstOrNull;
+      if (missingField != null) {
+        employeeDocumentsError.value = '${missingField.key} is required.';
+      } else if (file == null && existingFileName.trim().isEmpty) {
+        employeeDocumentsError.value = 'Choose a document file.';
+      }
+    }
+    if (employeeDocumentsError.isNotEmpty) {
+      ToastService.showErrorToast(employeeDocumentsError.value);
+      return;
+    }
+
+    final parsedIssuedDate = DateTime.tryParse(issuedDate);
+    final parsedValidDate = validDate.isEmpty
+        ? null
+        : DateTime.tryParse(validDate);
+    if (parsedIssuedDate == null ||
+        parsedIssuedDate.toIso8601String().substring(0, 10) != issuedDate ||
+        (validDate.isNotEmpty &&
+            (parsedValidDate == null ||
+                parsedValidDate.toIso8601String().substring(0, 10) !=
+                    validDate))) {
+      employeeDocumentsError.value = 'Enter valid document dates.';
+      ToastService.showErrorToast(employeeDocumentsError.value);
+      return;
+    }
+
+    final payload = <String, dynamic>{
+      'employee_id': parsedEmployeeId,
+      'doc_type': parsedDocumentType,
+      'doc_title': title.trim(),
+      'page_num': parsedPageNumber,
+      'doc_num': documentNumber.trim(),
+      'doc_issued_date': issuedDate,
+      'doc_issued_date_locale': issuedDateLocale.trim(),
+      'doc_valid_date': validDate,
+      'doc_issued_place': issuedPlace.trim(),
+    };
+    if (!isCreate) {
+      payload['_method'] = 'PATCH';
+    }
+
+    isEmployeeDocumentsSaving.value = true;
+    try {
+      if (file != null) {
+        payload['file_name'] = MultipartFile.fromBytes(
+          await file.readAsBytes(),
+          filename: file.name,
+        );
+      }
+      final response = await ApiRepo.apiPost(
+        apiPath: isCreate
+            ? 'employeeapp/employee-documents'
+            : 'employeeapp/employee-documents/$documentId',
+        data: FormData.fromMap(payload),
+        showToast: false,
+      );
+      if (response is Map &&
+          (response['success'] == true || response['status'] == 'success')) {
+        await fetchEmployeeDocuments();
+      } else {
+        employeeDocumentsError.value = response is Map
+            ? response['message']?.toString() ??
+                  'Unable to save employee document. Please try again.'
+            : response is String && response.isNotEmpty
+            ? response
+            : 'Unable to save employee document. Please try again.';
+        ToastService.showErrorToast(employeeDocumentsError.value);
+      }
+    } catch (error, stackTrace) {
+      employeeDocumentsError.value =
+          'Unable to save employee document. Please try again.';
+      log('Error saving employee document: $error', stackTrace: stackTrace);
+      ToastService.showErrorToast(employeeDocumentsError.value);
+    } finally {
+      isEmployeeDocumentsSaving.value = false;
+    }
+  }
+
   Future<void> updateEmployeeEducation({
     required String employeeId,
     required String degreeType,
@@ -643,6 +810,8 @@ class UserController extends GetxController {
     employeeExperiencesError.value = '';
     employeeEducations.clear();
     employeeEducationsError.value = '';
+    employeeDocuments.clear();
+    employeeDocumentsError.value = '';
     box.write('userData', userData);
     if (currentUser.value != null) {
       setCurrentUser(currentUser.value!);
