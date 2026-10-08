@@ -14,23 +14,6 @@ import '../widgets/common/custom_item_picker.dart';
 import '../widgets/common/custom_inputs.dart';
 import '../models/leave_request.dart';
 
-/// Extension to map colors directly to the LeaveType enum
-extension LeaveTypeColorX on LeaveType {
-  Color get color {
-    switch (this) {
-      case LeaveType.annual:
-        return AppColors.primary;
-      case LeaveType.sick:
-        return AppColors.secondary;
-      case LeaveType.casual:
-        return AppColors.warning;
-      case LeaveType.maternityPaternity:
-        return const Color(0xFF8B5CF6);
-      case LeaveType.unpaid:
-        return Colors.grey;
-    }
-  }
-}
 
 class ApplyLeaveScreen extends StatefulWidget {
   const ApplyLeaveScreen({super.key});
@@ -55,7 +38,6 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   UserController get _userController => Get.find<UserController>();
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
-  final _categoryPickerKey = GlobalKey();
 
   LeaveType _selectedType = LeaveType.casual;
   DateTime _startDate = DateTime.now().add(const Duration(days: 2));
@@ -85,11 +67,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     return 'Full Day';
   }
 
-  final TextEditingController _reasonController = TextEditingController(
-    text: 'Personal leave and medical checkup',
-  );
+  final TextEditingController _reasonController = TextEditingController();
   final TextEditingController _emergencyContactController =
-      TextEditingController(text: '+1 (555) 234-5678');
+      TextEditingController();
   bool _isSubmitting = false;
 
   @override
@@ -113,17 +93,23 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
   double get _calculatedDays {
     if (_durationType == 'half') return 0.5;
     if (_durationType == 'quarter') return 0.25;
-    final diff = _endDate.difference(_startDate).inDays + 1;
+    final startDay = DateTime.utc(
+      _startDate.year,
+      _startDate.month,
+      _startDate.day,
+    );
+    final endDay = DateTime.utc(_endDate.year, _endDate.month, _endDate.day);
+    final diff = endDay.difference(startDay).inDays + 1;
     return diff < 1 ? 1.0 : diff.toDouble();
   }
 
   String get _durationLabel {
-    if (_durationType == 'half') return '0.5 Day (Half Day - $_halfDayPeriod)';
+    if (_durationType == 'half') return '0.5 Day';
     if (_durationType == 'quarter') {
-      return '0.25 Day (Quarter Day - $_quarterPeriod)';
+      return '0.25 Day';
     }
     final days = _calculatedDays.toInt();
-    return '$days Day${days > 1 ? "s" : ""} (Full Day)';
+    return '$days Day${days > 1 ? "s" : ""}';
   }
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
@@ -135,7 +121,7 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     final DateTime? picked;
     try {
       picked = await showCustomCupertinoDatePicker(
-        showTime: true,
+        showTime: false,
         context: context,
         controller: dateController,
         minDate: now.subtract(const Duration(days: 30)),
@@ -147,20 +133,25 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
 
     final selectedDate = picked;
     if (selectedDate != null) {
+      final selectedDay = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+      );
       setState(() {
         if (_durationType != 'full') {
-          _startDate = selectedDate;
-          _endDate = selectedDate;
+          _startDate = selectedDay;
+          _endDate = selectedDay;
           return;
         }
 
         if (isStart) {
-          _startDate = selectedDate;
+          _startDate = selectedDay;
           if (_endDate.isBefore(_startDate)) {
             _endDate = _startDate;
           }
         } else {
-          _endDate = selectedDate;
+          _endDate = selectedDay;
           if (_endDate.isBefore(_startDate)) {
             _startDate = _endDate;
           }
@@ -538,41 +529,13 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     );
     if (selectedType == null || !mounted) return;
 
-    final pickerContext = _categoryPickerKey.currentContext;
-    final pickerRenderObject = pickerContext?.findRenderObject();
-    final previousPickerTop = pickerRenderObject is RenderBox
-        ? pickerRenderObject.localToGlobal(Offset.zero).dy
-        : null;
-
     setState(() => _selectedType = selectedType);
-    if (previousPickerTop != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_scrollController.hasClients) return;
-        final updatedContext = _categoryPickerKey.currentContext;
-        final updatedRenderObject = updatedContext?.findRenderObject();
-        if (updatedRenderObject is! RenderBox) return;
-
-        final updatedPickerTop = updatedRenderObject
-            .localToGlobal(Offset.zero)
-            .dy;
-        final scrollDelta = updatedPickerTop - previousPickerTop;
-        if (scrollDelta == 0) return;
-
-        final position = _scrollController.position;
-        _scrollController.jumpTo(
-          (position.pixels + scrollDelta)
-              .clamp(0.0, position.maxScrollExtent)
-              .toDouble(),
-        );
-      });
-    }
   }
 
   Widget _buildCategoryPicker(bool isDark) {
     final categoryColor = _selectedType.color;
 
     return InkWell(
-      key: _categoryPickerKey,
       onTap: _selectLeaveCategory,
       borderRadius: BorderRadius.circular(12),
       child: Container(
