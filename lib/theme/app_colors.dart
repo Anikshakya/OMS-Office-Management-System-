@@ -107,7 +107,7 @@ class AppColors {
     final h = time.hour;
 
     if (h >= 5 && h < 12) return DayPart.morning;
-    if (h >= 12 && h < 17) return DayPart.morning;
+    if (h >= 12 && h < 17) return DayPart.afternoon;
     if (h >= 17 && h < 21) return DayPart.evening;
 
     return DayPart.night;
