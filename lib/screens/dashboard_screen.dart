@@ -102,7 +102,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _openProfileEditor(int tabIndex) {
-    Get.to(() => EmployeeProfileEditScreen(initialTab: tabIndex, sectionOnly : true));
+    Get.to(
+      () => EmployeeProfileEditScreen(initialTab: tabIndex, sectionOnly: true),
+    );
   }
 
   @override
@@ -241,7 +243,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isNarrow = constraints.maxWidth < 360;
@@ -371,43 +373,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // ─────────────────────────────────────────────
                 Row(
                   children: [
-                    // Dashboard icon bubble
-                    Icon(Icons.dashboard_rounded, color: foreground, size: 19),
 
-                    const SizedBox(width: 10),
-
-                    // Dashboard title
+                    // Apply leave action
                     Expanded(
-                      child: Text(
-                        'Have a Good Day!',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.titleMedium(isDark).copyWith(
-                          color: foreground,
-                          fontWeight: FontWeight.w700,
+                      child: AppButton.primary(
+                        label: 'Apply Leave',
+                        icon: Icons.add_rounded,
+                        onPressed: () => _appController.setPageIndex(1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 10,
                         ),
+                        borderRadius: 10,
                       ),
                     ),
 
-                    const SizedBox(width: 10),
+                    SizedBox(width: 14),
 
                     // Appraisal button
-                    AppButton.secondary(
-                      label: 'View Appraisal',
-                      icon: Icons.star_outline_rounded,
-                      onPressed: () {
-                        _appController.setPageIndex(3);
-                      },
-                      isFullWidth: false,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+                    Expanded(
+                      child: AppButton.secondary(
+                        label: 'View Appraisal',
+                        icon: Icons.star_outline_rounded,
+                        onPressed: () {
+                          _appController.setPageIndex(3);
+                        },
+                        isFullWidth: false,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isNarrow ? 8 : 16,
+                          vertical: 10,
+                        ),
+                        borderRadius: 10,
+                        backgroundColor: isDark
+                            ? Colors.white
+                            : const Color(0xFFFAFBF8),
+                        foregroundColor: AppColors.primaryDark,
                       ),
-                      borderRadius: 10,
-                      backgroundColor: isDark
-                          ? Colors.white
-                          : const Color(0xFFFAFBF8),
-                      foregroundColor: AppColors.primaryDark,
                     ),
                   ],
                 ),

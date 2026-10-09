@@ -94,7 +94,7 @@ void main() {
     // Apply Leave opens as a separate route, not a home tab.
     await tester.tap(applyLeaveButton);
     await tester.pumpAndSettle();
-    expect(find.text('Request Time Off'), findsWidgets);
+    expect(find.text('Apply Leave'), findsOneWidget);
     Get.back();
     await tester.pumpAndSettle();
 
