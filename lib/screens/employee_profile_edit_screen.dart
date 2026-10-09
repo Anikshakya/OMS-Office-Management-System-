@@ -16,7 +16,6 @@ import '../widgets/common/custom_buttons.dart';
 import '../widgets/common/custom_cupertino_date_picker.dart';
 import '../widgets/common/custom_inputs.dart';
 import '../widgets/common/custom_item_picker.dart';
-import '../widgets/common/custom_tabs.dart';
 import '../widgets/common/ui_glass_container.dart';
 
 class EmployeeProfileEditScreen extends StatefulWidget {
@@ -213,85 +212,73 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
           );
         }
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 750),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeaderCard(context),
-                  const SizedBox(height: 16),
-                  if (!widget.sectionOnly) ...[
-                    AppTabBar(
-                      tabs: const [
-                        'Personal',
-                        'Employment',
-                        'Documents',
-                        'Qualifications',
-                        'Experience',
-                        'Family',
-                      ],
-                      selectedIndex: _activeTab,
-                      onTabChanged: _onTabChanged,
-                    ),
+        return RefreshIndicator(
+          onRefresh: () => _loadTabData(_activeTab),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 750),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeaderCard(context),
                     const SizedBox(height: 16),
-                  ],
-
-                  // 3. Tab Content Form Cards matching Apply Leave UI style
-                  Obx(
-                    () => Form(
-                      key: _formKey,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      child: _activeFields(context, isDark),
+                    // 3. Tab Content Form Cards matching Apply Leave UI style
+                    Obx(
+                      () => Form(
+                        key: _formKey,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        child: _activeFields(context, isDark),
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  if (_shouldShowSaveButton)
-                    Obx(() {
-                      final userController = Get.find<UserController>();
-                      final isSaving = switch (_activeTab) {
-                        2 => userController.isEmployeeDocumentsSaving.value,
-                        3 => userController.isEmployeeEducationsSaving.value,
-                        4 => userController.isEmployeeExperiencesSaving.value,
-                        5 => userController.isEmployeeFamilySaving.value,
-                        _ => userController.isEmployeeProfileSaving.value,
-                      };
-                      final label = switch (_activeTab) {
-                        2 =>
-                          '${_editingDocumentIndex == null ? 'Add' : 'Update'} Document',
-                        3 =>
-                          '${_editingEducationIndex == null ? 'Add' : 'Update'} Qualification',
-                        4 =>
-                          '${_editingExperienceIndex == null ? 'Add' : 'Update'} Experience',
-                        5 =>
-                          '${_hasFamilyRecord ? 'Update' : 'Add'} Family Details',
-                        _ =>
-                          'Update ${['Personal', 'Employment', 'Documents', 'Qualifications', 'Experience', 'Family'][_activeTab]} Details',
-                      };
-                      return AppButton.primary(
-                        label: label,
-                        icon:
-                            (_activeTab == 3 &&
-                                    _editingEducationIndex == null) ||
-                                (_activeTab == 4 &&
-                                    _editingExperienceIndex == null) ||
-                                (_activeTab == 2 &&
-                                    _editingDocumentIndex == null) ||
-                                (_activeTab == 5 && !_hasFamilyRecord)
-                            ? Icons.add_rounded
-                            : Icons.save_rounded,
-                        isFullWidth: true,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        borderRadius: 16,
-                        isLoading: isSaving,
-                        onPressed: isSaving ? null : _onUpdatePressed,
-                      );
-                    }),
-                ],
+                    if (_shouldShowSaveButton)
+                      Obx(() {
+                        final userController = Get.find<UserController>();
+                        final isSaving = switch (_activeTab) {
+                          2 => userController.isEmployeeDocumentsSaving.value,
+                          3 => userController.isEmployeeEducationsSaving.value,
+                          4 => userController.isEmployeeExperiencesSaving.value,
+                          5 => userController.isEmployeeFamilySaving.value,
+                          _ => userController.isEmployeeProfileSaving.value,
+                        };
+                        final label = switch (_activeTab) {
+                          2 =>
+                            '${_editingDocumentIndex == null ? 'Add' : 'Update'} Document',
+                          3 =>
+                            '${_editingEducationIndex == null ? 'Add' : 'Update'} Qualification',
+                          4 =>
+                            '${_editingExperienceIndex == null ? 'Add' : 'Update'} Experience',
+                          5 =>
+                            '${_hasFamilyRecord ? 'Update' : 'Add'} Family Details',
+                          _ =>
+                            'Update ${['Personal', 'Employment', 'Documents', 'Qualifications', 'Experience', 'Family'][_activeTab]} Details',
+                        };
+                        return AppButton.primary(
+                          label: label,
+                          icon:
+                              (_activeTab == 3 &&
+                                      _editingEducationIndex == null) ||
+                                  (_activeTab == 4 &&
+                                      _editingExperienceIndex == null) ||
+                                  (_activeTab == 2 &&
+                                      _editingDocumentIndex == null) ||
+                                  (_activeTab == 5 && !_hasFamilyRecord)
+                              ? Icons.add_rounded
+                              : Icons.save_rounded,
+                          isFullWidth: true,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          borderRadius: 16,
+                          isLoading: isSaving,
+                          onPressed: isSaving ? null : _onUpdatePressed,
+                        );
+                      }),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1755,7 +1742,6 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
   );
 
   Widget _activeFields(BuildContext context, bool isDark) {
-    final userController = Get.find<UserController>();
     final section = switch (_activeTab) {
       0 => _buildPersonalFields(isDark),
       1 => _buildEmploymentFields(isDark),
@@ -1765,31 +1751,7 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
       5 => _buildFamilyFields(isDark),
       _ => _buildPersonalFields(isDark),
     };
-    if (_activeTab >= 2 || userController.employeeProfileError.isEmpty) {
-      return section;
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          userController.employeeProfileError.value,
-          style: AppTypography.bodyMedium(
-            isDark,
-          ).copyWith(color: AppColors.error),
-        ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: userController.isEmployeeProfileLoading.value
-                ? null
-                : userController.fetchEmployeeProfile,
-            child: const Text('Retry'),
-          ),
-        ),
-        section,
-      ],
-    );
+    return section;
   }
 
   Widget _buildHeaderCard(BuildContext context) {
