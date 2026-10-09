@@ -205,21 +205,6 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                   children: [
                     _buildHeaderCard(context),
                     const SizedBox(height: 16),
-                    if (!widget.sectionOnly) ...[
-                      AppTabBar(
-                        tabs: const [
-                          'Personal',
-                          'Employment',
-                          'Documents',
-                          'Qualifications',
-                          'Experience',
-                          'Family',
-                        ],
-                        selectedIndex: _activeTab,
-                        onTabChanged: _onTabChanged,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
                     Expanded(child: loadingWidget()),
                   ],
                 ),

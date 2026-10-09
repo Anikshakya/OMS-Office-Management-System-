@@ -5,7 +5,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:oms/controllers/app_controller.dart';
-import 'package:oms/controllers/user_controller.dart';
 import 'package:oms/models/toast_notification.dart';
 import 'package:oms/screens/dashboard_screen.dart';
 import 'package:oms/screens/employee_list_screen.dart';
@@ -192,7 +191,6 @@ class _DashboardState extends State<Dashboard> {
   Widget _buildTopAppBar(BuildContext context, AppController appController) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isProfilePage = appController.selectedPageIndex.value == 2;
 
     return SafeArea(
       bottom: false,
@@ -210,113 +208,63 @@ class _DashboardState extends State<Dashboard> {
         ),
         child: Row(
           children: [
-            if (isProfilePage) ...[
-              SizedBox(
-                width: 40,
-                height: 40,
-                child: IconButton(
-                  tooltip: 'Back',
-                  onPressed: () => appController.setPageIndex(0),
-                  padding: EdgeInsets.zero,
-                  style: IconButton.styleFrom(
-                    backgroundColor: isDark
-                        ? AppColors.cardDark
-                        : const Color(0xFFE4E9F2),
-                    foregroundColor: isDark
-                        ? Colors.white
-                        : AppColors.textPrimaryLight,
-                  ),
-                  icon: const Icon(Icons.chevron_left_rounded, size: 22),
-                ),
+            // LEFT ICON / LOGO
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(10),
               ),
-              Expanded(
-                child: Text(
-                  Get.find<UserController>()
-                              .employeeProfileData['employee_name']
-                              ?.toString()
-                              .trim()
-                              .isNotEmpty ==
-                          true
-                      ? Get.find<UserController>()
-                            .employeeProfileData['employee_name']
-                            .toString()
-                      : Get.find<UserController>().currentUser.value?.name ??
-                            'Employee',
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              child: const Icon(
+                Icons.corporate_fare_rounded,
+                color: Colors.white,
+                size: 19,
               ),
-              const SizedBox(width: 40),
-            ] else ...[
-              // -----------------------------------------------------------------
-              // LEFT ICON / LOGO
-              // -----------------------------------------------------------------
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.corporate_fare_rounded,
-                  color: Colors.white,
-                  size: 19,
-                ),
-              ),
-              const SizedBox(width: 10),
+            ),
+            const SizedBox(width: 10),
 
-              // -----------------------------------------------------------------
-              // TITLE
-              // -----------------------------------------------------------------
-              const Expanded(
-                child: Text(
-                  ' OMS',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                ),
+            // TITLE
+            const Expanded(
+              child: Text(
+                ' OMS',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
               ),
+            ),
 
-              const Spacer(),
+            const Spacer(),
 
-              // -----------------------------------------------------------------
-              // NOTIFICATION
-              // -----------------------------------------------------------------
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  AppIconButton(
-                    icon: Icons.notifications_none_rounded,
-                    size: 38,
-                    onPressed: () {
-                      appController.showToast(
-                        'Notifications',
-                        'Annual performance review submissions are now open.',
-                        ToastType.info,
-                      );
-                    },
-                  ),
-                  Positioned(
-                    right: 7,
-                    top: 6,
-                    child: Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
+            // NOTIFICATION
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AppIconButton(
+                  icon: Icons.notifications_none_rounded,
+                  size: 38,
+                  onPressed: () {
+                    appController.showToast(
+                      'Notifications',
+                      'Annual performance review submissions are now open.',
+                      ToastType.info,
+                    );
+                  },
+                ),
+                Positioned(
+                  right: 7,
+                  top: 6,
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
                     ),
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ],
         ),
       ),
