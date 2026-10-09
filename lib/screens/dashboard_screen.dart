@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:oms/models/employee.dart';
@@ -29,15 +31,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late DateTime _selectedOnLeaveDate;
   final ValueNotifier<bool> _showOnLeaveTopFade = ValueNotifier(false);
 
+  // Greeting / hero gradient follow the current time of day.
+  late final ValueNotifier<DayPart> _dayPart;
+  Timer? _dayPartTimer;
+
   @override
   void initState() {
     super.initState();
     _selectedOnLeaveDate = DateTime.now();
     _pageController = PageController(initialPage: _initialPage);
+    _dayPart = ValueNotifier(AppColors.dayPartFor(DateTime.now()));
+    _dayPartTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _dayPart.value = AppColors.dayPartFor(DateTime.now());
+    });
   }
 
   @override
   void dispose() {
+    _dayPartTimer?.cancel();
+    _dayPart.dispose();
     _pageController.dispose();
     _showOnLeaveTopFade.dispose();
     super.dispose();
@@ -113,7 +125,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final user = _data.currentUser;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -128,9 +140,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: _buildProfileShortcut(
                   'Documents',
                   Icons.description_outlined,
-                  const Color(0xFFF0DEA0),
+                  AppColors.toneYellow(isDark),
                   2,
-                  isDark,
                 ),
               ),
               const SizedBox(width: 10),
@@ -138,25 +149,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: _buildProfileShortcut(
                   'Experience',
                   Icons.work_history_outlined,
-                  const Color(0xFFEFCFC7),
+                  AppColors.toneRose(isDark),
                   4,
-                  isDark,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _buildProfileShortcut(
-                  'Education',
+                  'Qualification',
                   Icons.school_outlined,
-                  const Color(0xFFCDEBE7),
+                  AppColors.toneMint(isDark),
                   3,
-                  isDark,
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
 
           // Employees On Leave Section taking all remaining screen height
           Expanded(child: _buildOnLeaveSection(isDark)),
@@ -165,48 +174,96 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // ===========================================================================
+  // PROFILE SHORTCUT TILES
+  // ===========================================================================
+
   Widget _buildProfileShortcut(
     String label,
     IconData icon,
-    Color accent,
+    AppTone tone,
     int tabIndex,
-    bool isDark,
   ) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _openProfileEditor(tabIndex),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Ink(
-          height: 78,
+          height: 76,
           decoration: BoxDecoration(
-            color: isDark ? AppColors.cardDark : accent.withValues(alpha: 0.72),
-            borderRadius: BorderRadius.circular(16),
+            color: tone.background,
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 21,
-                color: isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textSecondaryLight,
-              ),
-              const SizedBox(height: 5),
+              Icon(icon, size: 22, color: tone.foreground),
+              const SizedBox(height: 6),
               Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.caption(isDark).copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? AppColors.textPrimaryDark
-                      : AppColors.textSecondaryLight,
-                ),
+                style: AppTypography.tileLabel(tone.foreground),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // HERO BANNER (time-of-day gradient + greeting)
+  // ===========================================================================
+
+  /// Sun / sky decoration. This is the slot where the sun animation
+  /// (left -> right, via animations.dart) will be plugged in later.
+  Widget _buildSkyLayer(DayPart part, bool isDark) {
+    final glowColor = AppColors.heroSun(part, isDark);
+    
+    // Determine which asset to show based on the time of day
+    final bool isDay = part == DayPart.morning || part == DayPart.afternoon;
+    final String assetPath = isDay 
+        ? 'assets/icons/sun.png' 
+        : 'assets/icons/moon.png';
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Soft atmospheric glow behind the asset
+            Positioned(
+              right: -30,
+              top: 30,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      glowColor.withValues(alpha: isDark ? 0.25 : 0.5),
+                      glowColor.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            // Asset-based Sun or Moon
+            Positioned(
+              right: 5,
+              top: 32,
+              child: Image.asset(
+                assetPath,
+                width: 120, // Adjust this size if your PNG is too large/small
+                height: 120,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -218,207 +275,115 @@ class _DashboardScreenState extends State<DashboardScreen> {
     dynamic user,
     Employee emp,
   ) {
-    final primaryColor = isDark ? AppColors.primaryDark : AppColors.primary;
+    return ValueListenableBuilder<DayPart>(
+      valueListenable: _dayPart,
+      builder: (context, part, _) {
+        final colors = AppColors.heroGradient(part, isDark);
+        final bool isNight = part == DayPart.night;
+        final ink = isNight
+            ? Colors.white
+            : AppColors.ink(isDark);
+        final now = DateTime.now();
+        final timeString = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: isDark
-              ? [
-                  AppColors.primaryDark.withValues(alpha: 0.4),
-                  AppColors.secondary.withValues(alpha: 0.4),
-                ]
-              : [const Color(0xFFBDE9E3), const Color(0xFFF1E3B4)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withValues(alpha: isDark ? 0.35 : 0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+        return Container(
+          width: double.infinity,
+          height: 210, // Fixed taller height to match reference image
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              colors: colors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: colors.last.withValues(alpha: isDark ? 0.18 : 0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isNarrow = constraints.maxWidth < 360;
-            final foreground = isDark ? Colors.white : const Color(0xFF182127);
-            final secondaryForeground = isDark
-                ? Colors.white.withValues(alpha: 0.85)
-                : const Color(0xFF424C50);
-
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Stack(
               children: [
-                // ─────────────────────────────────────────────
-                // Profile Row
-                // ─────────────────────────────────────────────
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        AppAvatar(
-                          url: emp.avatarUrl,
-                          name: emp.name,
-                          radius: isNarrow ? 24 : 28,
+                _buildSkyLayer(part, isDark),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Top Left Clock
+                      Text(
+                        timeString,
+                        style: AppTypography.titleMedium(isDark).copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: ink.withValues(alpha: 0.9),
+                          letterSpacing: 0.5,
                         ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: AppColors.success,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isDark
-                                    ? AppColors.surfaceDark
-                                    : Colors.white,
-                                width: 2,
-                              ),
-                            ),
-                          ),
+                      ),
+                      
+                      const Spacer(),
+                      
+                      // Two-line Large Greeting
+                      Text(
+                        '${part.greeting},\n${user.name}.',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: ink,
+                          height: 1.2,
+                          letterSpacing: -0.5,
                         ),
-                      ],
-                    ),
+                      ),
+                      
+                      const SizedBox(height: 20),
 
-                    const SizedBox(width: 12),
-
-                    // User information
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      // Actions
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
                         children: [
-                          Text(
-                            'Hello, ${user.name}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: foreground,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.3,
-                              height: 1.2,
-                            ),
+                          // Apply leave action
+                          _HeroPillButton(
+                            label: 'Apply Leave',
+                            icon: Icons.add_circle_outline_rounded,
+                            background: AppColors.primary,
+                            foreground: Colors.white,
+                            onTap: () => _appController.setPageIndex(1),
                           ),
-
-                          if (user.designation != null &&
-                              user.designation.toString().isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              user.designation.toString(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: secondaryForeground,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w400,
-                                height: 1.2,
-                              ),
-                            ),
-                          ],
+                          // Appraisal button
+                          _HeroPillButton(
+                            label: 'Appraisals',
+                            icon: Icons.star_border_rounded,
+                            background: isDark
+                                ? Colors.white.withValues(alpha: 0.14)
+                                : Colors.white.withValues(alpha: 0.72),
+                            foreground: isNight
+                            ? Colors.white
+                            : isDark
+                                ? Colors.white
+                                : AppColors.primaryDark,
+                            onTap: () => _appController.setPageIndex(3),
+                          ),
                         ],
                       ),
-                    ),
-
-                    // Department
-                    if (user.department != null &&
-                        user.department.toString().isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 130),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: foreground.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: foreground.withValues(alpha: 0.12),
-                            ),
-                          ),
-                          child: Text(
-                            user.department.toString().toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: foreground,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
-                  ],
-                ),
-
-                const SizedBox(height: 14),
-
-                // ─────────────────────────────────────────────
-                // Dashboard / Appraisal Row
-                // ─────────────────────────────────────────────
-                Row(
-                  children: [
-
-                    // Apply leave action
-                    Expanded(
-                      child: AppButton.primary(
-                        label: 'Apply Leave',
-                        icon: Icons.add_rounded,
-                        onPressed: () => _appController.setPageIndex(1),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 10,
-                        ),
-                        borderRadius: 10,
-                      ),
-                    ),
-
-                    SizedBox(width: 14),
-
-                    // Appraisal button
-                    Expanded(
-                      child: AppButton.secondary(
-                        label: 'View Appraisal',
-                        icon: Icons.star_outline_rounded,
-                        onPressed: () {
-                          _appController.setPageIndex(3);
-                        },
-                        isFullWidth: false,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isNarrow ? 8 : 16,
-                          vertical: 10,
-                        ),
-                        borderRadius: 10,
-                        backgroundColor: isDark
-                            ? Colors.white
-                            : const Color(0xFFFAFBF8),
-                        foregroundColor: AppColors.primaryDark,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
+  // ===========================================================================
+  // EMPLOYEES ON LEAVE (single clean card with divided rows)
+  // ===========================================================================
 
   Widget _buildOnLeaveSection(bool isDark) {
     final now = DateTime.now();
@@ -650,7 +615,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ListView.separated(
             itemCount: onLeaveList.length,
             padding: const EdgeInsets.only(bottom: 86, left: 4, right: 4),
-            separatorBuilder: (context, index) => const SizedBox(height: 10),
+            separatorBuilder: (context, index) => const SizedBox(height: 7),
             itemBuilder: (context, index) {
               final req = onLeaveList[index];
 
@@ -994,5 +959,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'Dec',
     ];
     return '${days[dt.weekday - 1]}, ${dt.day} ${months[dt.month - 1]} ${dt.year}';
+  }
+}
+
+// =============================================================================
+// HERO PILL BUTTON
+// =============================================================================
+
+class _HeroPillButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color background;
+  final Color foreground;
+  final VoidCallback onTap;
+
+  const _HeroPillButton({
+    required this.label,
+    required this.icon,
+    required this.background,
+    required this.foreground,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: foreground),
+              const SizedBox(width: 6),
+              Text(label, style: AppTypography.pillLabel(foreground)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

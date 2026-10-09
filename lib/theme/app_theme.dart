@@ -21,16 +21,18 @@ class AppTheme {
       color: AppColors.cardLight,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: Color(0xFFE6EAF2), width: 1),
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppColors.borderSoftLight, width: 1),
       ),
     ),
     dividerTheme: const DividerThemeData(
-      color: AppColors.borderLight,
+      color: AppColors.dividerSoftLight,
       thickness: 1,
       space: 1,
     ),
     fontFamily: 'Roboto',
+    splashFactory: InkRipple.splashFactory,
+    highlightColor: Colors.transparent,
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.bgLight,
       foregroundColor: AppColors.textPrimaryLight,
@@ -74,16 +76,18 @@ class AppTheme {
       color: AppColors.cardDark,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: AppColors.borderDark, width: 1),
       ),
     ),
     dividerTheme: const DividerThemeData(
-      color: AppColors.borderDark,
+      color: AppColors.dividerSoftDark,
       thickness: 1,
       space: 1,
     ),
     fontFamily: 'Roboto',
+    splashFactory: InkRipple.splashFactory,
+    highlightColor: Colors.transparent,
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.bgDark,
       foregroundColor: AppColors.textPrimaryDark,
