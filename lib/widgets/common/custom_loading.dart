@@ -5,7 +5,7 @@ Widget loadingWidget([Color? color,double? size]) {
   return Center(
     child: CupertinoActivityIndicator(
       animating: true,
-      color: color ?? Colors.white,
+      color: Colors.white,
       radius: size ?? 14,
     ),
   );

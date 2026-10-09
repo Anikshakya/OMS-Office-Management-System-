@@ -73,7 +73,7 @@ class AppTextField extends StatelessWidget {
             filled: true,
             fillColor: isDark
                 ? (enabled ? AppColors.surfaceDark : AppColors.bgDark)
-                : (enabled ? AppColors.surfaceLight : AppColors.bgLight),
+                : (enabled ? const Color(0xFFF7F7F4) : AppColors.bgLight),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 12,

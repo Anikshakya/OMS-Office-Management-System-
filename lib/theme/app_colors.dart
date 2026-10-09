@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // iOS Inspired System Accent Colors
-  static const Color primary = Colors.teal; // iOS System Blue
+  static const Color primary = Color.fromARGB(255, 131, 79, 255);
   static const Color primaryLight = Color.fromARGB(255, 185, 147, 255);
   static const Color primaryDark = Color.fromARGB(255, 119, 1, 255);
   static const Color primaryContainer = Color(0xFFE5F1FF);

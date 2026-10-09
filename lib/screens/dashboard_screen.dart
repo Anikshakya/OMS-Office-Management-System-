@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:oms/models/employee.dart';
 import 'package:oms/models/leave_request.dart';
+import 'package:oms/screens/employee_profile_edit_screen.dart';
 import 'package:oms/widgets/common/ui_glass_container.dart';
 
 import '../controllers/app_controller.dart';
@@ -100,6 +101,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  void _openProfileEditor(int tabIndex) {
+    Get.to(() => EmployeeProfileEditScreen(initialTab: tabIndex, sectionOnly : true));
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -113,11 +118,94 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // Hero Banner
           _buildHeroBanner(context, isDark, user, user),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
+
+          Row(
+            children: [
+              Expanded(
+                child: _buildProfileShortcut(
+                  'Documents',
+                  Icons.description_outlined,
+                  const Color(0xFFF0DEA0),
+                  2,
+                  isDark,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildProfileShortcut(
+                  'Experience',
+                  Icons.work_history_outlined,
+                  const Color(0xFFEFCFC7),
+                  4,
+                  isDark,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildProfileShortcut(
+                  'Education',
+                  Icons.school_outlined,
+                  const Color(0xFFCDEBE7),
+                  3,
+                  isDark,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
 
           // Employees On Leave Section taking all remaining screen height
           Expanded(child: _buildOnLeaveSection(isDark)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildProfileShortcut(
+    String label,
+    IconData icon,
+    Color accent,
+    int tabIndex,
+    bool isDark,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openProfileEditor(tabIndex),
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          height: 78,
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.cardDark : accent.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 21,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textSecondaryLight,
+              ),
+              const SizedBox(height: 5),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.caption(isDark).copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textSecondaryLight,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -140,10 +228,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   AppColors.primaryDark.withValues(alpha: 0.4),
                   AppColors.secondary.withValues(alpha: 0.4),
                 ]
-              : [
-                  AppColors.secondary.withValues(alpha: 0.8),
-                  AppColors.secondary.withValues(alpha: 0.8),
-                ],
+              : [const Color(0xFFBDE9E3), const Color(0xFFF1E3B4)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -160,6 +245,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isNarrow = constraints.maxWidth < 360;
+            final foreground = isDark ? Colors.white : const Color(0xFF182127);
+            final secondaryForeground = isDark
+                ? Colors.white.withValues(alpha: 0.85)
+                : const Color(0xFF424C50);
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -212,8 +301,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             'Hello, ${user.name}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: foreground,
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.3,
@@ -229,7 +318,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.85),
+                                color: secondaryForeground,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w400,
                                 height: 1.2,
@@ -252,18 +341,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: foreground.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
+                              color: foreground.withValues(alpha: 0.12),
                             ),
                           ),
                           child: Text(
                             user.department.toString().toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: foreground,
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.4,
@@ -283,11 +372,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Row(
                   children: [
                     // Dashboard icon bubble
-                    const Icon(
-                      Icons.dashboard_rounded,
-                      color: Colors.white,
-                      size: 19,
-                    ),
+                    Icon(Icons.dashboard_rounded, color: foreground, size: 19),
 
                     const SizedBox(width: 10),
 
@@ -298,7 +383,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.titleMedium(isDark).copyWith(
-                          color: Colors.white,
+                          color: foreground,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -319,7 +404,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         vertical: 10,
                       ),
                       borderRadius: 10,
-                      backgroundColor: Colors.white,
+                      backgroundColor: isDark
+                          ? Colors.white
+                          : const Color(0xFFFAFBF8),
                       foregroundColor: AppColors.primaryDark,
                     ),
                   ],

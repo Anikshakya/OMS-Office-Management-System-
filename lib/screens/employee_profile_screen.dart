@@ -8,7 +8,6 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common/app_avatar.dart';
 import '../widgets/common/custom_buttons.dart';
-import '../widgets/common/custom_loading.dart';
 import '../widgets/common/ui_glass_container.dart';
 import 'employee_profile_edit_screen.dart';
 
@@ -30,106 +29,103 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
   String _selectedDateFormat = 'BS';
 
   @override
-  void initState() {
-    super.initState();
-    _refreshProfileData();
-  }
-
-  Future<void> _refreshProfileData() async {
-    final userController = Get.find<UserController>();
-    await Future.wait([
-      userController.fetchEmployeeProfile(),
-      userController.fetchEmployeeFamily(),
-      userController.fetchEmployeeExperiences(),
-      userController.fetchEmployeeEducations(),
-      userController.fetchEmployeeDocuments(),
-    ]);
-  }
-
-  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Obx(() {
       final userController = Get.find<UserController>();
-      if (userController.isEmployeeProfileLoading.value) {
-        return RefreshIndicator(
-          onRefresh: _refreshProfileData,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.7,
-                child: loadingWidget(AppColors.primary),
-              ),
-            ],
-          ),
-        );
-      }
-      if (userController.employeeProfileError.value.isNotEmpty) {
-        return RefreshIndicator(
-          onRefresh: _refreshProfileData,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.7,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          userController.employeeProfileError.value,
-                          textAlign: TextAlign.center,
-                          style: AppTypography.bodyMedium(
-                            isDark,
-                          ).copyWith(color: AppColors.error),
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: _refreshProfileData,
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-
       final profile = Map<String, dynamic>.from(
         userController.employeeProfileData,
       );
+      final employee = userController.currentUser.value;
+      if (employee != null) {
+        void addFallback(String key, String value) {
+          if (profile[key]?.toString().trim().isEmpty ?? true) {
+            profile[key] = value;
+          }
+        }
 
-      return RefreshIndicator(
-        onRefresh: _refreshProfileData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 1. Profile Header
-                  _buildProfileHeader(context, isDark, profile),
-                  const SizedBox(height: 20),
-                  _buildThemeToggleCard(isDark),
-                  const SizedBox(height: 20),
-                  // 2. Settings Menu Card matching screenshot design
-                  _buildSettingsCard(context, isDark),
-                ],
-              ),
+        addFallback('employee_name', employee.name);
+        addFallback('current_designation_name', employee.designation);
+        addFallback('active_text', employee.status);
+        addFallback('employee_code', employee.employeeCode);
+        addFallback('municipality_name', employee.location);
+        addFallback('image_name_url', employee.avatarUrl);
+      }
+
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildProfileHeader(context, isDark, profile),
+                const SizedBox(height: 20),
+                _buildThemeToggleCard(isDark),
+                const SizedBox(height: 20),
+                _buildSettingsCard(context, isDark),
+              ],
             ),
           ),
         ),
       );
     });
+  }
+
+  Widget _buildProfileSectionRow(
+    String label,
+    IconData icon,
+    int tabIndex,
+    bool isDark, {
+    bool showDivider = true,
+  }) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => Get.to(
+            () => EmployeeProfileEditScreen(
+              initialTab: tabIndex,
+              sectionOnly: true,
+            ),
+          ),
+          borderRadius: BorderRadius.circular(10),
+          child: SizedBox(
+            height: 48,
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: isDark ? Colors.white54 : AppColors.textMutedLight,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (showDivider)
+          Divider(
+            height: 1,
+            color: isDark ? Colors.white10 : AppColors.borderLight,
+          ),
+      ],
+    );
   }
 
   Widget _buildSettingsCard(BuildContext context, bool isDark) {
@@ -139,6 +135,24 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         children: [
+          _buildProfileSectionRow(
+            'Personal Info',
+            Icons.person_outline_rounded,
+            0,
+            isDark,
+          ),
+          _buildProfileSectionRow(
+            'Employee Info',
+            Icons.badge_outlined,
+            1,
+            isDark,
+          ),
+          _buildProfileSectionRow(
+            'Family Info',
+            Icons.people_outline_rounded,
+            5,
+            isDark,
+          ),
           // 1. Notification
           _buildSettingSwitchRow(
             icon: Icons.notifications_none_rounded,
@@ -168,17 +182,6 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
             icon: Icons.language_rounded,
             label: 'Language ($_selectedLanguage)',
             onTap: () => _showLanguagePicker(context, isDark),
-            isDark: isDark,
-          ),
-          Divider(
-            height: 1,
-            color: isDark ? Colors.white10 : AppColors.borderLight,
-          ),
-          // 5. Date Preference (BS)
-          _buildSettingSelectRow(
-            icon: Icons.calendar_month_rounded,
-            label: 'Date Preference ($_selectedDateFormat)',
-            onTap: () => _showDateFormatPicker(context, isDark),
             isDark: isDark,
           ),
           Divider(
@@ -416,35 +419,17 @@ class _EmployeeProfileScreenState extends State<EmployeeProfileScreen> {
               const SizedBox(height: 14),
               const Divider(height: 1),
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: AppButton.primary(
-                      label: 'Edit Profile',
-                      icon: Icons.edit_outlined,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      onPressed: (){
-                        Get.to(() => const EmployeeProfileEditScreen());
-                      },
-                    ),
+              SizedBox(
+                width: double.infinity,
+                child: AppButton.outlined(
+                  label: 'Log Out',
+                  icon: Icons.logout_rounded,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: AppButton.outlined(
-                      label: 'Log Out',
-                      icon: Icons.logout_rounded,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      onPressed: _showLogoutConfirmation,
-                    ),
-                  ),
-                ],
+                  onPressed: _showLogoutConfirmation,
+                ),
               ),
             ],
           );

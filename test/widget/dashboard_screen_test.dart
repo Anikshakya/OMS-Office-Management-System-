@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dio/dio.dart' as dio;
+import 'package:oms/api_config/dio_client.dart';
 import 'package:oms/screens/dashboard.dart';
 import 'package:oms/controllers/app_data_controller.dart';
 import 'package:get/get.dart';
@@ -32,13 +34,38 @@ void main() {
     final appController = Get.put(AppController());
     final dataController = Get.put(AppDataController());
     Get.put(ThemeController(themeService: _MemoryThemeService()));
+    final profileApiMock = dio.InterceptorsWrapper(
+      onRequest: (options, handler) {
+        if (options.path.contains('employeeapp/employees')) {
+          handler.resolve(
+            dio.Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'status': 'success',
+                'data': {
+                  'employee_name': dataController.currentUser.name,
+                  'employee_code': dataController.currentUser.employeeCode,
+                  'current_designation_name':
+                      dataController.currentUser.designation,
+                  'supervisor_id': 1,
+                  'supervisor_ids_text': 'Test Supervisor',
+                },
+              },
+            ),
+          );
+        } else {
+          handler.next(options);
+        }
+      },
+    );
+    DioClient.instance.dio.interceptors.add(profileApiMock);
+    addTearDown(() {
+      DioClient.instance.dio.interceptors.remove(profileApiMock);
+    });
     addTearDown(Get.reset);
 
-    await tester.pumpWidget(
-      const GetMaterialApp(
-        home: Dashboard(),
-      ),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: Dashboard()));
 
     // Wait for animations
     await tester.pumpAndSettle();
@@ -53,15 +80,21 @@ void main() {
       find.textContaining(dataController.currentUser.designation),
       findsOneWidget,
     );
+    expect(find.text('Documents'), findsOneWidget);
+    expect(find.text('Experience'), findsOneWidget);
+    expect(find.text('Education'), findsOneWidget);
 
     // Verify Apply Leave button
-    final applyLeaveButton = find.ancestor(of: find.text('Apply Leave'), matching: find.byType(InkWell));
+    final applyLeaveButton = find.ancestor(
+      of: find.text('Apply Leave'),
+      matching: find.byType(InkWell),
+    );
     expect(applyLeaveButton, findsOneWidget);
 
     // Apply Leave opens as a separate route, not a home tab.
     await tester.tap(applyLeaveButton);
     await tester.pumpAndSettle();
-    expect(find.text('Apply Leave'), findsWidgets); // Depends on what ApplyLeaveScreen has, but it's loaded because we navigate to it.
+    expect(find.text('Request Time Off'), findsWidgets);
     Get.back();
     await tester.pumpAndSettle();
 
@@ -70,7 +103,10 @@ void main() {
 
     await tester.tap(find.text('View Appraisal'));
     await tester.pumpAndSettle();
-    expect(find.text('Submit Appraisal'), findsWidgets); // Appraisalscreen title or something
+    expect(
+      find.text('Submit Appraisal'),
+      findsWidgets,
+    ); // Appraisalscreen title or something
     Get.back();
     await tester.pumpAndSettle();
 

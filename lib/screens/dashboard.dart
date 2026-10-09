@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:oms/controllers/app_controller.dart';
+import 'package:oms/controllers/user_controller.dart';
 import 'package:oms/models/toast_notification.dart';
 import 'package:oms/screens/dashboard_screen.dart';
 import 'package:oms/screens/employee_list_screen.dart';
@@ -82,8 +83,8 @@ class _DashboardState extends State<Dashboard> {
       final stackIndex = pageIndex < 0 ? 0 : pageIndex;
 
       return Scaffold(
-        extendBody: true, // Allows body content to show behind translucent blurred floating nav
-        
+        extendBody:
+            true, // Allows body content to show behind translucent blurred floating nav
         // ---------------------------------------------------------------------
         // TOP APP BAR
         // ---------------------------------------------------------------------
@@ -109,7 +110,10 @@ class _DashboardState extends State<Dashboard> {
   // FLOATING IOS NAVIGATION BAR
   // ===========================================================================
 
-  Widget _buildIosFloatingNav(BuildContext context, AppController appController) {
+  Widget _buildIosFloatingNav(
+    BuildContext context,
+    AppController appController,
+  ) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -127,7 +131,10 @@ class _DashboardState extends State<Dashboard> {
                 filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
                 child: Container(
                   height: 66,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: (isDark ? const Color(0xFF1E1E1E) : Colors.white)
                         .withValues(alpha: isDark ? 0.72 : 0.82),
@@ -140,7 +147,9 @@ class _DashboardState extends State<Dashboard> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.14),
+                        color: Colors.black.withValues(
+                          alpha: isDark ? 0.45 : 0.14,
+                        ),
                         blurRadius: 28,
                         spreadRadius: -2,
                         offset: const Offset(0, 12),
@@ -150,7 +159,8 @@ class _DashboardState extends State<Dashboard> {
                   child: Row(
                     children: _tabs.map((tab) {
                       final isSelected =
-                          appController.selectedPageIndex.value == tab.pageIndex;
+                          appController.selectedPageIndex.value ==
+                          tab.pageIndex;
 
                       return Expanded(
                         child: _FloatingNavItem(
@@ -182,6 +192,7 @@ class _DashboardState extends State<Dashboard> {
   Widget _buildTopAppBar(BuildContext context, AppController appController) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isProfilePage = appController.selectedPageIndex.value == 2;
 
     return SafeArea(
       bottom: false,
@@ -199,116 +210,164 @@ class _DashboardState extends State<Dashboard> {
         ),
         child: Row(
           children: [
-            // -----------------------------------------------------------------
-            // LEFT ICON / LOGO
-            // -----------------------------------------------------------------
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.corporate_fare_rounded,
-                color: Colors.white,
-                size: 19,
-              ),
-            ),
-            const SizedBox(width: 10),
-
-            // -----------------------------------------------------------------
-            // TITLE
-            // -----------------------------------------------------------------
-            const Expanded(
-              child: Text(
-                ' OMS',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-              ),
-            ),
-
-            const Spacer(),
-
-            // -----------------------------------------------------------------
-            // NOTIFICATION
-            // -----------------------------------------------------------------
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                AppIconButton(
-                  icon: Icons.notifications_none_rounded,
-                  size: 38,
-                  onPressed: () {
-                    appController.showToast(
-                      'Notifications',
-                      'Annual performance review submissions are now open.',
-                      ToastType.info,
-                    );
-                  },
+            if (isProfilePage) ...[
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: IconButton(
+                  tooltip: 'Back',
+                  onPressed: () => appController.setPageIndex(0),
+                  padding: EdgeInsets.zero,
+                  style: IconButton.styleFrom(
+                    backgroundColor: isDark
+                        ? AppColors.cardDark
+                        : const Color(0xFFE4E9F2),
+                    foregroundColor: isDark
+                        ? Colors.white
+                        : AppColors.textPrimaryLight,
+                  ),
+                  icon: const Icon(Icons.chevron_left_rounded, size: 22),
                 ),
-                Positioned(
-                  right: 7,
-                  top: 6,
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
+              ),
+              Expanded(
+                child: Text(
+                  Get.find<UserController>()
+                              .employeeProfileData['employee_name']
+                              ?.toString()
+                              .trim()
+                              .isNotEmpty ==
+                          true
+                      ? Get.find<UserController>()
+                            .employeeProfileData['employee_name']
+                            .toString()
+                      : Get.find<UserController>().currentUser.value?.name ??
+                            'Employee',
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 40),
+            ] else ...[
+              // -----------------------------------------------------------------
+              // LEFT ICON / LOGO
+              // -----------------------------------------------------------------
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.corporate_fare_rounded,
+                  color: Colors.white,
+                  size: 19,
+                ),
+              ),
+              const SizedBox(width: 10),
 
-            // -----------------------------------------------------------------
-            // NEW LEAVE
-            // -----------------------------------------------------------------
-            const SizedBox(width: 6),
+              // -----------------------------------------------------------------
+              // TITLE
+              // -----------------------------------------------------------------
+              const Expanded(
+                child: Text(
+                  ' OMS',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                ),
+              ),
 
-            Container(
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.30),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+              const Spacer(),
+
+              // -----------------------------------------------------------------
+              // NOTIFICATION
+              // -----------------------------------------------------------------
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AppIconButton(
+                    icon: Icons.notifications_none_rounded,
+                    size: 38,
+                    onPressed: () {
+                      appController.showToast(
+                        'Notifications',
+                        'Annual performance review submissions are now open.',
+                        ToastType.info,
+                      );
+                    },
+                  ),
+                  Positioned(
+                    right: 7,
+                    top: 6,
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                   ),
                 ],
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    appController.setPageIndex(1);
-                  },
+
+              // -----------------------------------------------------------------
+              // NEW LEAVE
+              // -----------------------------------------------------------------
+              const SizedBox(width: 6),
+
+              Container(
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
                   borderRadius: BorderRadius.circular(10),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 11),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.add_rounded, color: Colors.white, size: 18),
-                        SizedBox(width: 4),
-                        Text(
-                          'Apply Leave',
-                          style: TextStyle(
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.30),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      appController.setPageIndex(1);
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 11),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.add_rounded,
                             color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
+                            size: 18,
                           ),
-                        ),
-                      ],
+                          SizedBox(width: 4),
+                          Text(
+                            'Apply Leave',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -357,13 +416,17 @@ class _FloatingNavItemState extends State<_FloatingNavItem>
     // Spring scale effect (1.0 -> 1.25 -> 1.0)
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.28)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.28,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 35,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.28, end: 1.0)
-            .chain(CurveTween(curve: Curves.elasticOut)),
+        tween: Tween<double>(
+          begin: 1.28,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.elasticOut)),
         weight: 65,
       ),
     ]).animate(_bounceController);
@@ -371,13 +434,17 @@ class _FloatingNavItemState extends State<_FloatingNavItem>
     // Subtle upward jump during the bounce (-4px lift)
     _yOffsetAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: -4.0)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween<double>(
+          begin: 0.0,
+          end: -4.0,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 35,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: -4.0, end: 0.0)
-            .chain(CurveTween(curve: Curves.elasticOut)),
+        tween: Tween<double>(
+          begin: -4.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.elasticOut)),
         weight: 65,
       ),
     ]).animate(_bounceController);
@@ -463,7 +530,9 @@ class _FloatingNavItemState extends State<_FloatingNavItem>
                 duration: const Duration(milliseconds: 200),
                 style: TextStyle(
                   fontSize: 10.5,
-                  fontWeight: widget.selected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: widget.selected
+                      ? FontWeight.w700
+                      : FontWeight.w500,
                   color: widget.selected ? activeColor : inactiveColor,
                   letterSpacing: -0.1,
                 ),

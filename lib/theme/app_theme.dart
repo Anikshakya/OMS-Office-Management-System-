@@ -21,8 +21,8 @@ class AppTheme {
       color: AppColors.cardLight,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.borderLight, width: 1),
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: Color(0xFFE6EAF2), width: 1),
       ),
     ),
     dividerTheme: const DividerThemeData(
@@ -31,6 +31,28 @@ class AppTheme {
       space: 1,
     ),
     fontFamily: 'Roboto',
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.bgLight,
+      foregroundColor: AppColors.textPrimaryLight,
+      elevation: 0,
+      centerTitle: true,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: const Color(0xFFF7F7F4),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFFE8E7E0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+    ),
   );
 
   static ThemeData darkTheme = ThemeData(
@@ -62,5 +84,11 @@ class AppTheme {
       space: 1,
     ),
     fontFamily: 'Roboto',
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.bgDark,
+      foregroundColor: AppColors.textPrimaryDark,
+      elevation: 0,
+      centerTitle: true,
+    ),
   );
 }
