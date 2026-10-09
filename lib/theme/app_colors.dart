@@ -113,7 +113,9 @@ class AppColors {
     return DayPart.night;
   }
 
+
   static List<Color> heroGradient(DayPart part, bool isDark) {
+    // Nighttime: keep a deep, elegant blue gradient.
     if (part == DayPart.night) {
       return const [
         Color(0xFF101C2C),
@@ -122,8 +124,8 @@ class AppColors {
       ];
     }
 
+    // Daytime in dark mode: muted, deep teal.
     if (isDark) {
-      // Muted, deep teal for daytime in dark mode.
       return const [
         Color(0xFF173536),
         Color(0xFF204747),
@@ -131,13 +133,15 @@ class AppColors {
       ];
     }
 
-    // Fresh, light teal for daytime in light mode.
+    // Daytime in light mode: pastel gradient inspired by your reference.
     return const [
-      Color(0xFFDDF5F4),
-      Color(0xFFBCEAE7),
-      Color(0xFF91DEDE),
+      Color(0xFFC8E9DF), // Soft mint green
+      Color(0xFFF1E9B9), // Pale warm yellow
+      Color(0xFFFFE7A6), // Sunny golden cream
+      Color(0xFFD8E9D8), // Soft sage green
     ];
   }
+
 
   /// Colour of the sun or moon.
   static Color heroSun(DayPart part, bool isDark) {
