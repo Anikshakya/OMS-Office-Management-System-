@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/app_data_controller.dart';
+
 import '../controllers/app_controller.dart';
+import '../controllers/app_data_controller.dart';
 import '../controllers/leave_controller.dart';
 import '../controllers/user_controller.dart';
+import '../models/leave_request.dart';
 import '../models/toast_notification.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../widgets/common/ui_glass_container.dart';
 import '../widgets/common/custom_buttons.dart';
 import '../widgets/common/custom_cupertino_date_picker.dart';
-import '../widgets/common/custom_item_picker.dart';
 import '../widgets/common/custom_inputs.dart';
-import '../models/leave_request.dart';
+import '../widgets/common/custom_item_picker.dart';
+import '../widgets/common/ui_glass_container.dart';
+
 
 class ApplyLeaveScreen extends StatefulWidget {
   const ApplyLeaveScreen({super.key});
@@ -323,20 +325,10 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
     final remainingDays = selectedBalance?.remaining ?? 0;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.bgDark : const Color(0xFFF0E2B1),
-      appBar: AppBar(
-        title: const Text('Request Time Off'),
-        centerTitle: true,
-        backgroundColor: isDark ? AppColors.bgDark : const Color(0xFFF0E2B1),
-        leading: IconButton(
-          tooltip: 'Close',
-          icon: const Icon(Icons.close_rounded),
-          onPressed: () => Get.back(),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Apply Leave'), centerTitle: true),
       body: SingleChildScrollView(
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
@@ -345,46 +337,9 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 8, 0, 20),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 76,
-                            height: 76,
-                            decoration: BoxDecoration(
-                              color: _selectedType.color.withValues(
-                                alpha: isDark ? 0.18 : 0.28,
-                              ),
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: Icon(
-                              Icons.person_remove_alt_1_rounded,
-                              size: 34,
-                              color: _selectedType.color,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            'Plan your time away',
-                            style: AppTypography.titleMedium(
-                              isDark,
-                            ).copyWith(fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Choose your leave type and dates below.',
-                            textAlign: TextAlign.center,
-                            style: AppTypography.bodyMedium(isDark),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                   // Header Banner displaying selected category stats
                   GlassContainer(
-                    borderRadius: 20,
+                    borderRadius: 16,
                     padding: const EdgeInsets.all(16),
                     child: Builder(
                       builder: (context) {
@@ -499,28 +454,28 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                   const SizedBox(height: 16),
 
                   // 1. Leave Category Selection
-                  _buildSectionLabel('Leave Type', isDark),
+                  _buildSectionLabel('1. Leave Category', isDark),
                   const SizedBox(height: 8),
                   _buildCategoryPicker(isDark),
 
                   const SizedBox(height: 16),
 
                   // 2. Date Range & Duration Card
-                  _buildSectionLabel('Dates & Duration', isDark),
+                  _buildSectionLabel('2. Date Range & Duration Type', isDark),
                   const SizedBox(height: 8),
                   _buildDateCard(isDark),
 
                   const SizedBox(height: 16),
 
                   // 3. Assigned Supervisor
-                  _buildSectionLabel('Approver & Emergency Contact', isDark),
+                  _buildSectionLabel('3. Assigned Supervisor', isDark),
                   const SizedBox(height: 8),
                   _buildSupervisorAndHandoverCard(isDark),
 
                   const SizedBox(height: 16),
 
                   // 4. Reason / Cause Card
-                  _buildSectionLabel('Reason for Absence', isDark),
+                  _buildSectionLabel('4. Reason for Absence', isDark),
                   const SizedBox(height: 8),
                   GlassContainer(
                     borderRadius: 16,
@@ -538,11 +493,11 @@ class _ApplyLeaveScreenState extends State<ApplyLeaveScreen> {
                   // Submit Button
                   AppButton.primary(
                     label: _isSubmitting
-                        ? 'Sending Request...'
-                        : 'Send Request',
+                        ? 'Submitting Request...'
+                        : 'Submit ${_durationLabel.split("(").first.trim()} Leave Request',
                     isFullWidth: true,
                     isLoading: _isSubmitting,
-                    icon: Icons.chevron_right_rounded,
+                    icon: Icons.send_rounded,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     borderRadius: 16,
                     onPressed: _handleSubmit,
