@@ -14,6 +14,7 @@ import '../theme/app_typography.dart';
 import '../widgets/common/app_avatar.dart';
 import '../widgets/common/custom_buttons.dart';
 import '../widgets/common/custom_cupertino_date_picker.dart';
+import '../widgets/common/custom_dialogs.dart';
 import '../widgets/common/custom_inputs.dart';
 import '../widgets/common/custom_item_picker.dart';
 import '../widgets/common/ui_glass_container.dart';
@@ -1009,11 +1010,38 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'Edit Document',
-            onPressed: () =>
-                _openDocumentForm(document: document, index: index),
-            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+          Column(
+            children: [
+              IconButton(
+                tooltip: 'Edit Document',
+                onPressed: () =>
+                    _openDocumentForm(document: document, index: index),
+                icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+              ),
+              IconButton(
+                tooltip: 'Delete Document',
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (context) => AppConfirmationDialog(
+                    title: 'Delete Document?',
+                    message: 'Delete this document from the employee profile?',
+                    confirmLabel: 'Delete',
+                    isDestructive: true,
+                    onConfirm: () =>
+                        Get.find<UserController>().deleteEmployeeDocument(
+                          documentId:
+                              (document['doc_id'] ?? document['id'])
+                                  ?.toString() ??
+                              '',
+                        ),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: AppColors.error,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1385,11 +1413,42 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                   ],
                 ),
               ),
-              IconButton(
-                tooltip: 'Edit Qualification',
-                onPressed: () =>
-                    _openEducationForm(education: education, index: index),
-                icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+              Column(
+                children: [
+                  IconButton(
+                    tooltip: 'Edit Qualification',
+                    onPressed: () =>
+                        _openEducationForm(education: education, index: index),
+                    icon: const Icon(
+                      Icons.edit_outlined,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Delete Qualification',
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (context) => AppConfirmationDialog(
+                        title: 'Delete Qualification?',
+                        message:
+                            'Delete this qualification from the employee profile?',
+                        confirmLabel: 'Delete',
+                        isDestructive: true,
+                        onConfirm: () =>
+                            Get.find<UserController>().deleteEmployeeEducation(
+                              educationId:
+                                  (education['edu_id'] ?? education['id'])
+                                      ?.toString() ??
+                                  '',
+                            ),
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1620,11 +1679,46 @@ class _EmployeeProfileEditScreenState extends State<EmployeeProfileEditScreen> {
                   ],
                 ),
               ),
-              IconButton(
-                tooltip: 'Edit Experience',
-                onPressed: () =>
-                    _openExperienceForm(experience: experience, index: index),
-                icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+              Column(
+                children: [
+                  IconButton(
+                    tooltip: 'Edit Experience',
+                    onPressed: () => _openExperienceForm(
+                      experience: experience,
+                      index: index,
+                    ),
+                    icon: const Icon(
+                      Icons.edit_outlined,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Delete Experience',
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (context) => AppConfirmationDialog(
+                        title: 'Delete Experience?',
+                        message:
+                            'Delete this experience from the employee profile?',
+                        confirmLabel: 'Delete',
+                        isDestructive: true,
+                        onConfirm: () =>
+                            Get.find<UserController>().deleteEmployeeExperience(
+                              experienceId:
+                                  (experience['experience_id'] ??
+                                          experience['employee_experience_id'] ??
+                                          experience['id'])
+                                      ?.toString() ??
+                                  '',
+                            ),
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

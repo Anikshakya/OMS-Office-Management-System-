@@ -451,6 +451,46 @@ class UserController extends GetxController {
     }
   }
 
+  Future<void> deleteEmployeeDocument({required String documentId}) async {
+    employeeDocumentsError.value = '';
+    if (documentId.trim().isEmpty) {
+      ToastService.showErrorToast('Document ID is required.');
+      return;
+    }
+
+    var data = {'id': documentId};
+
+    try {
+      final response = await ApiRepo.apiDelete(
+        apiPath: 'employeeapp/employee-documents/{id}',
+        data: data,
+        showToast: false,
+      );
+      if (response is Map &&
+          (response['success'] == true || response['status'] == 'success')) {
+        employeeDocuments.removeWhere(
+          (document) =>
+              (document['doc_id'] ?? document['id']).toString() == documentId,
+        );
+        await fetchEmployeeDocuments();
+        ToastService.showSuccessToast('Document deleted successfully.');
+      } else {
+        final errorMessage = response is Map
+            ? response['message']?.toString() ??
+                  'Unable to delete employee document. Please try again.'
+            : response is String && response.isNotEmpty
+            ? response
+            : 'Unable to delete employee document. Please try again.';
+        ToastService.showErrorToast(errorMessage);
+      }
+    } catch (error, stackTrace) {
+      log('Error deleting employee document: $error', stackTrace: stackTrace);
+      ToastService.showErrorToast(
+        'Unable to delete employee document. Please try again.',
+      );
+    }
+  }
+
   Future<void> saveEmployeeDocument({
     required String employeeId,
     required String documentType,
@@ -777,6 +817,91 @@ class UserController extends GetxController {
       ToastService.showErrorToast(employeeExperiencesError.value);
     } finally {
       isEmployeeExperiencesSaving.value = false;
+    }
+  }
+
+  Future<void> deleteEmployeeEducation({required String educationId}) async {
+    employeeEducationsError.value = '';
+    if (educationId.trim().isEmpty) {
+      ToastService.showErrorToast('Education ID is required.');
+      return;
+    }
+
+    var data = {'id': educationId};
+
+    try {
+      final response = await ApiRepo.apiDelete(
+        apiPath: 'employeeapp/employee-educations/{id}',
+        data: data,
+        showToast: false,
+      );
+      if (response is Map &&
+          (response['success'] == true || response['status'] == 'success')) {
+        employeeEducations.removeWhere(
+          (education) =>
+              (education['edu_id'] ?? education['id']).toString() ==
+              educationId,
+        );
+        await fetchEmployeeEducations();
+        ToastService.showSuccessToast('Education deleted successfully.');
+      } else {
+        final errorMessage = response is Map
+            ? response['message']?.toString() ??
+                  'Unable to delete education information. Please try again.'
+            : response is String && response.isNotEmpty
+            ? response
+            : 'Unable to delete education information. Please try again.';
+        ToastService.showErrorToast(errorMessage);
+      }
+    } catch (error, stackTrace) {
+      log('Error deleting employee education: $error', stackTrace: stackTrace);
+      ToastService.showErrorToast(
+        'Unable to delete education information. Please try again.',
+      );
+    }
+  }
+
+  Future<void> deleteEmployeeExperience({required String experienceId}) async {
+    employeeExperiencesError.value = '';
+    if (experienceId.trim().isEmpty) {
+      ToastService.showErrorToast('Experience ID is required.');
+      return;
+    }
+
+    var data = {'id': experienceId};
+
+    try {
+      final response = await ApiRepo.apiDelete(
+        apiPath: 'employeeapp/employee-experiences/{id}',
+        data: data,
+        showToast: false,
+      );
+      if (response is Map &&
+          (response['success'] == true || response['status'] == 'success')) {
+        employeeExperiences.removeWhere(
+          (experience) =>
+              (experience['experience_id'] ??
+                      experience['employee_experience_id'] ??
+                      experience['id'])
+                  .toString() ==
+              experienceId,
+        );
+        await fetchEmployeeExperiences();
+        ToastService.showSuccessToast('Experience deleted successfully.');
+      } else {
+        final errorMessage = response is Map
+            ? response['message']?.toString() ??
+                  'Unable to delete experience information. Please try again.'
+            : response is String && response.isNotEmpty
+            ? response
+            : 'Unable to delete experience information. Please try again.';
+        ToastService.showErrorToast(errorMessage);
+      }
+    } catch (error, stackTrace) {
+      log('Error deleting employee experience: $error', stackTrace: stackTrace);
+      ToastService.showErrorToast(
+        'Unable to delete experience information. Please try again.',
+      );
     }
   }
 
