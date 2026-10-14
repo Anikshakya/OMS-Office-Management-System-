@@ -155,4 +155,13 @@ class AppTypography {
         color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
         height: 1.3,
       );
+
+  /// Big number on stat / balance cards.
+  static TextStyle statValue(bool isDark) => TextStyle(
+        fontSize: 26,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.6,
+        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+        height: 1.1,
+      );
 }
